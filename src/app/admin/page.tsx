@@ -18,10 +18,6 @@ export default function AdminDashboardPage() {
 
 const comingSoon = [
   {
-    title: "Events",
-    text: "Set up each weekend, its prices and deposits, and copy last year's to make this year's.",
-  },
-  {
     title: "Bookings",
     text: "Everyone booked on each event, what they've paid and what they still owe. The March 2027 spreadsheet comes across here.",
   },
@@ -60,6 +56,17 @@ async function Dashboard() {
         Hello {user.fullName ?? user.email}. You&apos;re signed in as{" "}
         <strong>{ROLE_LABELS[user.staffRole].toLowerCase()}</strong>.
       </p>
+
+      <Card>
+        <h2 className="text-3xl">Events</h2>
+        <p className="mt-1">
+          Set up each weekend, its options, prices and deposits, and copy last
+          year&apos;s to make this year&apos;s.
+        </p>
+        <p className="mt-3">
+          <Link href="/admin/events">Go to events</Link>
+        </p>
+      </Card>
 
       <section aria-labelledby="coming-heading">
         <h2 id="coming-heading" className="text-3xl">

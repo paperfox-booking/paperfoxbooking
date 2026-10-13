@@ -11,6 +11,7 @@ crafting weekends:
 - **Setting up accounts and running it locally:** [`docs/setup.md`](docs/setup.md).
 - **The database:** [`docs/data-model.md`](docs/data-model.md).
 - **Deploying and rolling back:** [`docs/deploy.md`](docs/deploy.md).
+- **For the Paper Fox team:** [`docs/running-an-event.md`](docs/running-an-event.md).
 
 Built with Next.js, Supabase (London region), Tailwind CSS and TypeScript.
 

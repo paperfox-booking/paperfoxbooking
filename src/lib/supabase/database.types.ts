@@ -9,6 +9,97 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      events: {
+        Row: {
+          balance_due_on: string;
+          booking_closes_at: string | null;
+          booking_opens_at: string | null;
+          capacity: number;
+          copied_from_event_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deposit_hold_days: number;
+          description: string;
+          ends_at: string;
+          facebook_group_url: string | null;
+          hotel_info: string;
+          id: string;
+          included: string;
+          slug: string;
+          starts_at: string;
+          status: Database["public"]["Enums"]["event_status"];
+          summary: string;
+          title: string;
+          updated_at: string;
+          venue_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          balance_due_on: string;
+          booking_closes_at?: string | null;
+          booking_opens_at?: string | null;
+          capacity: number;
+          copied_from_event_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deposit_hold_days?: number;
+          description?: string;
+          ends_at: string;
+          facebook_group_url?: string | null;
+          hotel_info?: string;
+          id?: string;
+          included?: string;
+          slug?: string;
+          starts_at: string;
+          status?: Database["public"]["Enums"]["event_status"];
+          summary?: string;
+          title: string;
+          updated_at?: string;
+          venue_id: string;
+        };
+        Update: {
+          balance_due_on?: string;
+          booking_closes_at?: string | null;
+          booking_opens_at?: string | null;
+          capacity?: number;
+          copied_from_event_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deposit_hold_days?: number;
+          description?: string;
+          ends_at?: string;
+          facebook_group_url?: string | null;
+          hotel_info?: string;
+          id?: string;
+          included?: string;
+          slug?: string;
+          starts_at?: string;
+          status?: Database["public"]["Enums"]["event_status"];
+          summary?: string;
+          title?: string;
+          updated_at?: string;
+          venue_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "events_copied_from_event_id_fkey";
+            columns: ["copied_from_event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_venue_id_fkey";
+            columns: ["venue_id"];
+            isOneToOne: false;
+            referencedRelation: "venues";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           created_at: string;
@@ -71,14 +162,132 @@ export type Database = {
         };
         Relationships: [];
       };
+      ticket_types: {
+        Row: {
+          capacity: number | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deposit_pence: number | null;
+          description: string;
+          event_id: string;
+          id: string;
+          name: string;
+          on_sale: boolean;
+          price_pence: number;
+          sort_order: number;
+          starts_at: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          capacity?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deposit_pence?: number | null;
+          description?: string;
+          event_id: string;
+          id?: string;
+          name: string;
+          on_sale?: boolean;
+          price_pence: number;
+          sort_order?: number;
+          starts_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          capacity?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deposit_pence?: number | null;
+          description?: string;
+          event_id?: string;
+          id?: string;
+          name?: string;
+          on_sale?: boolean;
+          price_pence?: number;
+          sort_order?: number;
+          starts_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ticket_types_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      venues: {
+        Row: {
+          access_info: string;
+          address: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          id: string;
+          map_url: string | null;
+          name: string;
+          parking: string;
+          phone: string;
+          postcode: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          access_info?: string;
+          address?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          id?: string;
+          map_url?: string | null;
+          name: string;
+          parking?: string;
+          phone?: string;
+          postcode?: string;
+          updated_at?: string;
+        };
+        Update: {
+          access_info?: string;
+          address?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          id?: string;
+          map_url?: string | null;
+          name?: string;
+          parking?: string;
+          phone?: string;
+          postcode?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      copy_event: {
+        Args: {
+          new_starts_on: string;
+          new_title: string;
+          source_event_id: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
+      event_status:
+        "draft" | "published" | "sold_out" | "cancelled" | "finished";
       staff_role: "owner" | "admin" | "door";
     };
     CompositeTypes: {
@@ -207,6 +416,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      event_status: ["draft", "published", "sold_out", "cancelled", "finished"],
       staff_role: ["owner", "admin", "door"],
     },
   },

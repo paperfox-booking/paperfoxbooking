@@ -1,7 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
-import pg from "pg";
 import { expectNoAccessibilityProblems } from "./accessibility";
 import { latestSignInCode } from "./mailbox";
+import {
+  createAccountWithPassword,
+  giveRole,
+  teamSignIn,
+  uniqueEmail,
+} from "./team";
 
 /**
  * The full sign-in journeys against real Supabase (`supabase start`):
@@ -9,15 +14,6 @@ import { latestSignInCode } from "./mailbox";
  * password. Tagged @supabase because they need the whole local Supabase stack
  * running; CI always runs them.
  */
-
-const databaseUrl =
-  process.env.DATABASE_URL ??
-  "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
-
-function uniqueEmail(projectName: string): string {
-  const random = Math.random().toString(36).slice(2, 8);
-  return `e2e-${projectName}-${Date.now()}-${random}@example.test`;
-}
 
 async function requestCode(page: Page, email: string): Promise<Date> {
   const sentAfter = new Date(Date.now() - 1000);
@@ -36,57 +32,7 @@ async function signIn(page: Page, email: string): Promise<void> {
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
-/**
- * Creates a confirmed account with a password, the way George adds a team
- * member in the Supabase dashboard (Authentication → Users → Add user).
- */
-async function createAccountWithPassword(
-  email: string,
-  password: string,
-): Promise<void> {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is needed to create test accounts",
-    );
-  }
-  const response = await fetch(`${apiUrl}/auth/v1/admin/users`, {
-    method: "POST",
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, password, email_confirm: true }),
-  });
-  if (!response.ok) {
-    throw new Error(
-      `Couldn't create ${email}: ${response.status} ${await response.text()}`,
-    );
-  }
-}
-
-async function teamSignIn(page: Page, email: string, password: string) {
-  await page.getByLabel("Email address").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-}
-
-async function makeOwner(email: string): Promise<void> {
-  const client = new pg.Client({ connectionString: databaseUrl });
-  await client.connect();
-  try {
-    await client.query(
-      `insert into public.staff (user_id, role)
-       select id, 'owner' from auth.users where email = $1`,
-      [email],
-    );
-  } finally {
-    await client.end();
-  }
-}
+const makeOwner = (email: string) => giveRole(email, "owner");
 
 test.describe("signing in with an emailed code @supabase", () => {
   test("a customer signs in, sees their account, and can't see admin", async ({

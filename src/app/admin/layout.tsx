@@ -7,6 +7,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+const NAV = [
+  { href: "/admin", label: "Dashboard" },
+  { href: "/admin/events", label: "Events" },
+  { href: "/admin/venues", label: "Venues" },
+  { href: "/admin/password", label: "Change password" },
+  { href: "/", label: "Public site" },
+] as const;
+
 /**
  * The admin area's frame. It shows no data, so it can load instantly; each
  * admin page checks the person's role on the server before showing anything.
@@ -19,30 +27,16 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
           <BrandMark href="/admin" suffix="Admin" />
           <nav aria-label="Admin">
             <ul className="flex flex-wrap items-center gap-1">
-              <li>
-                <Link
-                  href="/admin"
-                  className="inline-flex min-h-12 items-center rounded-lg px-3 font-bold text-ink no-underline hover:bg-cream-light"
-                >
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/password"
-                  className="inline-flex min-h-12 items-center rounded-lg px-3 font-bold text-ink no-underline hover:bg-cream-light"
-                >
-                  Change password
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/"
-                  className="inline-flex min-h-12 items-center rounded-lg px-3 font-bold text-ink no-underline hover:bg-cream-light"
-                >
-                  Public site
-                </Link>
-              </li>
+              {NAV.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="inline-flex min-h-12 items-center rounded-lg px-3 font-bold text-ink no-underline hover:bg-cream-light"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
         </div>

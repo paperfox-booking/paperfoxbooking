@@ -359,7 +359,7 @@ The email wording and the terms are kept in `docs/reference/`. The booking detai
 ### 1. The business
 
 - **Name:** Paper Fox. The legal name is **Paper Fox Events Ltd**, company number **13717760**, both from the footer of the terms.
-- **People:** Nichola and Morag run it and sign every email "Nichola & Morag". Still to confirm: which of them is the owner in the system's terms, and their surnames.
+- **People:** Nichola and Morag run it and sign every email "Nichola & Morag". The spreadsheet's team rows give their surnames as Murphy and Cutts (to confirm). Still to confirm: which of them is the owner in the system's terms.
 - **Phone:** +44 (0)24 7693 7383.
 - **Email:** hello@paper-fox.co.uk.
 - **Address:** Paper Fox, Suite 1B, The Hall, Rugby Road, Wolston, CV8 3FZ.
@@ -557,6 +557,21 @@ The email wording and the terms are kept in `docs/reference/`. The booking detai
   - Customers keep the emailed 6-digit code, switched on once Resend is set up. That's needed before the emails phase anyway.
 - **Hosting:** Vercel, as the brief recommends. George will set up the Supabase and Vercel accounts when ready. Until then he gets screenshots.
 
+### The March 2027 people and the spreadsheet screen (George, 13/10/2026)
+
+George asked for the spreadsheet to come into the system, built as soon as Phase 1 is done:
+
+- **A profile for each person,** kept across events (the same people come back every quarter): name, email, mobile, emergency contact, dietary and health needs, and notes.
+- **A spreadsheet-style screen for each event,** for quick typing, with the same columns as today:
+  - name, start time (9am or 4pm) and room;
+  - dietary and health, mobile, emergency contact and notes;
+  - total due, received and balance;
+  - payment notes, and comms (which email was sent, and when).
+- **Team rows first:** the rows marked "AA" (Nichola, Morag and their helpers) stay at the top, then everyone else alphabetically.
+- **Rooms with their own limits** (for example Main room 78, 2nd Room A, 2nd Room B and Welsh), as well as the event's overall limit.
+- **The import is done in the app:** staff upload the spreadsheet on an import page, check a preview with problems flagged, then confirm. The real data never goes into this repository.
+- **Working pace:** George asked to build quickly, so Claude carries on to the next phase without waiting for each pull request to be merged. George still reviews and merges each one.
+
 ### Build order (proposed 13/10/2026, replaces the order of phases 1 to 4 in section 14)
 
 1. **Phase 0: foundations.** As in section 14, with sign-in by emailed code.
@@ -598,6 +613,7 @@ George asked to start building straight away and answer these later. Until he do
 | 18 | Accounts in Paper Fox's name? (question 15) | Assume yes. George sets them up |
 | 19 | How long to keep health information after an event | To confirm before launch |
 | 20 | The web address for bookings and the email sender (question 13) | `book.paper-fox.co.uk`, and `bookings@paper-fox.co.uk` |
+| 21 | Row 2 of the spreadsheet is "Nichola Murphy & Debbie G": one shared place or two places? | Imported as one row, which staff can split |
 
 ### 6, 7, 9, 13 to 16
 

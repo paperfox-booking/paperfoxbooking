@@ -57,3 +57,18 @@ export function sumPence(amounts: readonly number[]): number {
     return total + amount;
   }, 0);
 }
+
+/**
+ * Pence as pounds for a form field to start with, without a pound sign or
+ * trailing ".00": 19500 → "195", 19550 → "195.50".
+ */
+export function penceToPoundsInput(pence: number): string {
+  assertPence(pence);
+  const sign = pence < 0 ? "-" : "";
+  const absolute = Math.abs(pence);
+  const pounds = Math.floor(absolute / 100);
+  const rest = absolute % 100;
+  return rest === 0
+    ? `${sign}${pounds}`
+    : `${sign}${pounds}.${String(rest).padStart(2, "0")}`;
+}

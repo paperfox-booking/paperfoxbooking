@@ -18,6 +18,14 @@ export const metadata: Metadata = {
     siteName: "Paper Fox",
     locale: "en_GB",
     type: "website",
+    images: [
+      {
+        url: "/brand/share.png",
+        width: 1200,
+        height: 630,
+        alt: "Paper Fox crafting weekends",
+      },
+    ],
   },
 };
 
