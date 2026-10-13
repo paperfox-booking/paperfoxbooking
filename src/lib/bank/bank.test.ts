@@ -121,7 +121,7 @@ describe("matchStatement", () => {
       bookings,
     );
     expect(first?.suggested).toBe("PF-2027-0002");
-    expect(first?.candidates[0]?.why).toBe("Reference PF-2027-0002");
+    expect(first?.candidates[0]?.why).toBe("Reference on the statement");
     expect(second?.suggested).toBe("PF-2027-0003");
   });
 

@@ -77,7 +77,7 @@ function scoreBooking(
     return {
       bookingId: booking.bookingId,
       score: 100,
-      why: `Reference ${booking.reference}`,
+      why: "Reference on the statement",
     };
   }
   const { first, surnames } = nameParts(booking.fullName);

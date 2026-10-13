@@ -73,7 +73,12 @@ export function BankImport({ bookings }: { bookings: MatchBooking[] }) {
       setChoices(
         found.map((match) => ({
           bookingId: match.suggested ?? "",
-          record: Boolean(match.suggested) && !match.alreadyRecorded,
+          // Not someone who's already paid in full: it may be for someone else.
+          record:
+            Boolean(match.suggested) &&
+            !match.alreadyRecorded &&
+            (bookings.find((booking) => booking.bookingId === match.suggested)
+              ?.balancePence ?? 0) > 0,
         })),
       );
       if (statement.length === 0) {
@@ -250,7 +255,9 @@ export function BankImport({ bookings }: { bookings: MatchBooking[] }) {
                                     value={candidate.bookingId}
                                   >
                                     {booking.fullName}, {booking.reference} (
-                                    {candidate.why.toLowerCase()})
+                                    {candidate.why.charAt(0).toLowerCase() +
+                                      candidate.why.slice(1)}
+                                    )
                                   </option>
                                 );
                               })}
@@ -285,6 +292,12 @@ export function BankImport({ bookings }: { bookings: MatchBooking[] }) {
                       />
                     </div>
                   )}
+                  {chosen && !result && chosen.balancePence <= 0 ? (
+                    <p className="mt-2 font-bold text-danger">
+                      {chosen.fullName} has already paid in full, so this may be
+                      for someone else. Check before recording it.
+                    </p>
+                  ) : null}
                   {chosen && !result ? (
                     <p className="mt-2 text-sm text-stone">
                       {chosen.eventTitle}. Owes{" "}

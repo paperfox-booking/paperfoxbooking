@@ -102,6 +102,9 @@ test.describe("team sign-in with a password @supabase", () => {
     await expect(page.getByText(/You're signed in as\s+owner/)).toBeVisible();
     await expectNoAccessibilityProblems(page);
 
+    // On a phone, the menu is folded away behind a Menu button.
+    const menu = page.getByRole("button", { name: "Menu" });
+    if (await menu.isVisible()) await menu.click();
     await page.getByRole("link", { name: "Change password" }).click();
     await page.getByLabel("New password").fill(chosen);
     await page.getByLabel("Type it again").fill(chosen);
