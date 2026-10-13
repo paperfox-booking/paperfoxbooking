@@ -35,6 +35,8 @@ export const TEMPLATE_KEYS = [
   "B3",
   "thanks",
   "balance_reminder",
+  "class_kits",
+  "joining",
 ] as const;
 export type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 

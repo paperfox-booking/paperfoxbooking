@@ -56,6 +56,11 @@ export function composeEmail({
         `{{${name}}} is empty for this booking.`,
     ),
   ];
+  if (/\[[^\]\n]+\]/.test(body.text)) {
+    warnings.push(
+      "The wording still has a note in [square brackets] to replace. Change it on the Emails page first.",
+    );
+  }
   const subjectText = subject.text.replace(/\s+/g, " ").trim();
   return {
     subject: subjectText,

@@ -259,3 +259,23 @@ describe("composeEmail", () => {
     ]);
   });
 });
+
+describe("notes left in the wording", () => {
+  it("warns about [square bracket] notes still to replace", () => {
+    const email = composeEmail({
+      wording: { subject: "Hello", body: "Hello\n\n[Add the timetable.]" },
+      values: placeholderValues({
+        settings,
+        event,
+        booking,
+        payment: null,
+        today: "2026-10-14",
+      }),
+      business,
+      logoUrl: "",
+    });
+    expect(email.warnings).toContain(
+      "The wording still has a note in [square brackets] to replace. Change it on the Emails page first.",
+    );
+  });
+});

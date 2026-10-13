@@ -159,6 +159,8 @@ export const EMAIL_TEMPLATES = [
   "B3",
   "thanks",
   "balance_reminder",
+  "class_kits",
+  "joining",
   "other",
 ] as const;
 export const EMAIL_TEMPLATE_LABELS: Record<
@@ -170,6 +172,8 @@ export const EMAIL_TEMPLATE_LABELS: Record<
   B3: "B3: paid in full",
   thanks: "Thanks for your payment",
   balance_reminder: "Balance reminder",
+  class_kits: "Class kits",
+  joining: "Joining details",
   other: "Other",
 };
 
