@@ -276,7 +276,13 @@ export function PeopleGrid({
           : null}
       </p>
 
-      <div className="max-w-full overflow-x-auto rounded-2xl border border-cream bg-white">
+      {/* Focusable, so keyboard users can scroll it sideways too. */}
+      <div
+        role="region"
+        aria-label="People booked"
+        tabIndex={0}
+        className="relative max-w-full overflow-x-auto rounded-2xl border border-cream bg-white"
+      >
         <table
           ref={table}
           onKeyDown={onKeyDown}
