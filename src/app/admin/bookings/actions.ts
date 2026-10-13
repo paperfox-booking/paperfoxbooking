@@ -452,3 +452,43 @@ export async function reinstateBookingAction(
   }
   redirect(`/admin/bookings/${bookingId}?notice=reinstated`);
 }
+
+/**
+ * The spreadsheet screen's Pay box: records a bank transfer received today,
+ * for the amount typed. Anything else (cash, another date, a note) uses the
+ * full payment form.
+ */
+export async function quickPaymentAction(
+  bookingId: string,
+  amount: string,
+): Promise<CellResult> {
+  if (!(await staffWithPermission("payments.record"))) {
+    return {
+      ok: false,
+      error: "You need to be an owner or admin to record payments.",
+    };
+  }
+  const parsed = paymentSchema(today()).safeParse({
+    amount,
+    receivedOn: today(),
+    method: "bank_transfer",
+    note: "",
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Check the amount",
+    };
+  }
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("payments").insert({
+    booking_id: bookingId,
+    amount_pence: parsed.data.amount,
+    received_on: parsed.data.receivedOn,
+    method: "bank_transfer",
+  });
+  if (error) return { ok: false, error: friendlyDatabaseError(error) };
+  const row = await getPersonRow(bookingId);
+  if (!row) return { ok: false, error: "That booking couldn't be found." };
+  return { ok: true, row };
+}

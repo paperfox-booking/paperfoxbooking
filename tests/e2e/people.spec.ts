@@ -129,6 +129,20 @@ test.describe("people booked on an event @supabase", () => {
       ),
     ).toBeVisible();
 
+    // The quickest way: type a bank transfer into Pay and press Enter.
+    const pay = page.getByRole("textbox", {
+      name: `Payment received today from ${people.bea}`,
+    });
+    await pay.fill("75");
+    await pay.press("Enter");
+    await expect(
+      visibleText(
+        page,
+        `Recorded £75 from ${people.bea}. They've now paid £75.`,
+      ),
+    ).toBeVisible();
+    await expect(pay).toHaveValue("");
+
     // Add someone new.
     const newcomer = `Cy Newcomer ${uniqueSuffix()}`;
     await page.getByLabel("Name", { exact: true }).fill(newcomer);
@@ -146,7 +160,7 @@ test.describe("people booked on an event @supabase", () => {
     await expect(
       page.getByRole("textbox", { name: `Name for ${newcomer}` }),
     ).toBeVisible();
-    await expect(visibleText(page, "Received: £60")).toBeVisible();
+    await expect(visibleText(page, "Received: £135")).toBeVisible();
 
     const csv = await page.request.get(
       `/admin/events/${eventId}/people/export`,

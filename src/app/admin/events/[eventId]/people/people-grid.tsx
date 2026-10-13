@@ -7,14 +7,17 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { saveCellAction } from "@/app/admin/bookings/actions";
+import {
+  quickPaymentAction,
+  saveCellAction,
+} from "@/app/admin/bookings/actions";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/card";
 import { Checkbox, Input } from "@/components/ui/form";
 import { comparePeople, type PersonRow } from "@/lib/bookings/people";
 import { bookingMoney, type BookingMoney } from "@/lib/bookings/money";
 import { formatUkDate } from "@/lib/dates";
-import { formatPrice } from "@/lib/money";
+import { formatPrice, penceToPoundsInput } from "@/lib/money";
 import type { Cell } from "@/lib/validation/bookings";
 import { cn } from "@/lib/utils";
 import { AddPersonForm } from "./add-person-form";
@@ -162,6 +165,34 @@ export function PeopleGrid({
     }
   }
 
+  /** The Pay box: a bank transfer received today, recorded on Enter. */
+  async function quickPay(row: PersonRow, input: HTMLInputElement) {
+    const amount = input.value.trim();
+    if (!amount) return;
+    const key = `${row.bookingId}:pay`;
+    setStatus((current) => ({ ...current, [key]: "saving" }));
+    const result = await quickPaymentAction(row.bookingId, amount);
+    if (result.ok) {
+      input.value = "";
+      replaceRow(result.row);
+      setErrors((current) => {
+        const rest = { ...current };
+        delete rest[key];
+        return rest;
+      });
+      setStatus((current) => ({ ...current, [key]: "saved" }));
+      setAnnouncement(
+        `Recorded ${amount.startsWith("£") ? amount : `£${amount}`} from ${result.row.fullName}. They've now paid ${formatPrice(result.row.paidPence)}.`,
+      );
+    } else {
+      setErrors((current) => ({ ...current, [key]: result.error }));
+      setStatus((current) => ({ ...current, [key]: "error" }));
+      setAnnouncement(
+        `Couldn't record the payment from ${row.fullName}: ${result.error}`,
+      );
+    }
+  }
+
   /** Enter and the arrow keys move up and down a column, like a spreadsheet. */
   function onKeyDown(event: KeyboardEvent<HTMLTableElement>) {
     const target = event.target as HTMLElement;
@@ -171,6 +202,15 @@ export function PeopleGrid({
     const rowIndex = Number(target.dataset.row);
     const column = target.dataset.col;
     if (Number.isNaN(rowIndex) || !column) return;
+
+    if (column === "pay" && event.key === "Enter") {
+      const row = visible[rowIndex];
+      if (row && target.value.trim()) {
+        event.preventDefault();
+        void quickPay(row, target);
+        return;
+      }
+    }
 
     let next = rowIndex;
     if (event.key === "Enter" || event.key === "ArrowDown") next += 1;
@@ -274,6 +314,9 @@ export function PeopleGrid({
         {canEdit
           ? " Type into a box to change it: it saves when you move on. Enter and the up and down arrows move between rows."
           : null}
+        {canEdit && canSeeMoney
+          ? " To record a bank transfer that arrived today, type the amount in Pay and press Enter. For cash or another date, use Add payment."
+          : null}
       </p>
 
       {/* Focusable, so keyboard users can scroll it sideways too. */}
@@ -304,6 +347,7 @@ export function PeopleGrid({
                   <Th numeric>Total due</Th>
                   <Th numeric>Received</Th>
                   <Th numeric>Balance</Th>
+                  {canEdit ? <Th>Pay</Th> : null}
                 </>
               ) : null}
               <Th>Mobile</Th>
@@ -473,6 +517,44 @@ export function PeopleGrid({
                       <Td numeric>
                         <Balance money={money} />
                       </Td>
+                      {canEdit ? (
+                        <Td>
+                          {editable ? (
+                            <div className="relative w-28">
+                              <span
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-stone"
+                              >
+                                £
+                              </span>
+                              <input
+                                data-row={rowIndex}
+                                data-col="pay"
+                                inputMode="decimal"
+                                aria-label={`Payment received today from ${row.fullName}`}
+                                aria-invalid={
+                                  errors[`${row.bookingId}:pay`]
+                                    ? true
+                                    : undefined
+                                }
+                                placeholder={
+                                  money.balancePence > 0
+                                    ? penceToPoundsInput(
+                                        money.depositOwedPence ||
+                                          money.balancePence,
+                                      )
+                                    : ""
+                                }
+                                className={cn(
+                                  cellInput,
+                                  "w-28 border-cream bg-cream-light pl-6 placeholder:text-stone/70",
+                                  statusClass(status[`${row.bookingId}:pay`]),
+                                )}
+                              />
+                            </div>
+                          ) : null}
+                        </Td>
+                      ) : null}
                     </>
                   ) : null}
                   <Td>
