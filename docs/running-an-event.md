@@ -122,6 +122,28 @@ Open an event and choose **People booked**. It works like the spreadsheet:
 
 Door staff see who's booked and their details, but not money.
 
+## Recording lots of bank transfers at once
+
+Choose **Bank statement** in the menu:
+
+1. In online banking, download the statement for the dates you need as a
+   **CSV** file (most banks offer this next to the PDF statement).
+2. Choose the file. Nothing is saved yet. Each payment in is shown with the
+   booking it seems to be for:
+   - a **booking reference** in the description (like PF-2027-0001) is a sure
+     match;
+   - otherwise the person's **name**: their surname, with their first name
+     or initial. If two people could match, you choose;
+   - money going out is left off.
+3. Check each one. Change the booking if it's wrong, or choose **Not a
+   booking payment**. Untick anything you don't want recorded.
+4. Choose **Record**. Each payment is recorded as a bank transfer on the
+   date it arrived, with the statement's description as its note, and sends
+   its email (B2, B3 or a thank you).
+
+Uploading the same statement twice is safe: payments already recorded from a
+statement are flagged and skipped.
+
 ## A booking's own page
 
 Choose someone's reference (like PF-2027-0001) to open their booking. It
