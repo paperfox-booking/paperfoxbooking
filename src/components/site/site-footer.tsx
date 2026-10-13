@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { business } from "@/lib/business";
 
 export function SiteFooter() {
@@ -45,9 +46,14 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <p className="mx-auto max-w-5xl px-4 pb-8 text-sm">
-        {business.legalName}, company number {business.companyNumber}.
-      </p>
+      <div className="mx-auto flex max-w-5xl flex-wrap justify-between gap-2 px-4 pb-8 text-sm">
+        <p>
+          {business.legalName}, company number {business.companyNumber}.
+        </p>
+        <Link href="/sign-in/team" className="text-ink">
+          Team sign in
+        </Link>
+      </div>
     </footer>
   );
 }

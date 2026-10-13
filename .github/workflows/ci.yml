@@ -57,6 +57,7 @@ jobs:
           {
             echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
             echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY:-$PUBLISHABLE_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY:-$SECRET_KEY}"
             echo "DATABASE_URL=$DB_URL"
             echo "MAILPIT_URL=${MAILPIT_URL:-${INBUCKET_URL:-http://127.0.0.1:54324}}"
           } >> "$GITHUB_ENV"

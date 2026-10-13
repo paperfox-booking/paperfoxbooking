@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useSyncExternalStore } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/card";
 import { Field, Input, describedBy } from "@/components/ui/form";
-import { safeNextPath } from "@/lib/auth/redirects";
+import { useReturnPath } from "@/lib/auth/use-return-path";
 import { signInAction, type SignInState } from "./actions";
 
 const initialState: SignInState = { step: "email", email: "" };
@@ -142,25 +142,4 @@ export function SignInForm() {
       </Button>
     </form>
   );
-}
-
-/**
- * Where to go after signing in, from ?next= in the address. Read in the
- * browser so the page itself can stay static (the server render uses "").
- * Without it, the server sends the team to the admin area and customers to
- * their account.
- */
-function useReturnPath(): string {
-  return useSyncExternalStore(
-    subscribeToNothing,
-    () =>
-      safeNextPath(new URLSearchParams(window.location.search).get("next"), ""),
-    () => "",
-  );
-}
-
-// The address doesn't change while this page is open, so there's nothing to
-// listen for.
-function subscribeToNothing(): () => void {
-  return () => {};
 }

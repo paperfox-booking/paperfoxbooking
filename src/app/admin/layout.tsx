@@ -29,6 +29,14 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
               </li>
               <li>
                 <Link
+                  href="/admin/password"
+                  className="inline-flex min-h-12 items-center rounded-lg px-3 font-bold text-ink no-underline hover:bg-cream-light"
+                >
+                  Change password
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/"
                   className="inline-flex min-h-12 items-center rounded-lg px-3 font-bold text-ink no-underline hover:bg-cream-light"
                 >

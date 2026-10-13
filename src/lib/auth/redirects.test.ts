@@ -27,8 +27,19 @@ describe("safeNextPath", () => {
 });
 
 describe("signInPath", () => {
-  it("remembers where to go back to", () => {
-    expect(signInPath("/admin")).toBe("/sign-in?next=%2Fadmin");
+  it("sends customers to the emailed-code sign-in, remembering where to go back to", () => {
+    expect(signInPath("/account")).toBe("/sign-in?next=%2Faccount");
+  });
+
+  it("sends the admin area to the team sign-in page", () => {
+    expect(signInPath("/admin")).toBe("/sign-in/team?next=%2Fadmin");
+    expect(signInPath("/admin/password")).toBe(
+      "/sign-in/team?next=%2Fadmin%2Fpassword",
+    );
+  });
+
+  it("doesn't treat look-alike paths as the admin area", () => {
+    expect(signInPath("/administrator")).toBe("/sign-in?next=%2Fadministrator");
   });
 
   it("drops unsafe return paths", () => {

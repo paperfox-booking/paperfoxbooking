@@ -104,23 +104,48 @@ go through Resend, from Paper Fox's own address.
 - **Stripe**, only if card payments are wanted. For now Paper Fox takes bank
   transfers only.
 
-## 2. Making yourself an owner
+## 2. Adding the team (Nichola, Morag and you)
 
-The first time anyone signs in, they're a customer. To make someone an owner
-(or admin, or door staff):
+The team sign in with an email address and a password, on the **Team sign
+in** page (`/sign-in/team`, linked at the bottom of every page). Customers
+sign in differently, with an emailed code, once Resend is set up.
 
-1. Ask them to sign in to the site once, using their own email address.
-2. In Supabase, open **SQL Editor** and run this, changing the email:
+Do this once the database has been set up (see `docs/deploy.md`).
+
+1. **Password length:** in Supabase, go to **Authentication → Sign In /
+   Providers → Email** and set **Minimum password length** to `12`.
+2. **Create each account:** go to **Authentication → Users → Add user →
+   Create new user**:
+   - Email address: their own email address;
+   - Password: a temporary one, at least 12 characters (a few words strung
+     together works well);
+   - tick **Auto Confirm User**, then click **Create user**.
+3. **Make them owners:** go to **SQL Editor** and run this, with the real
+   email addresses:
 
    ```sql
    insert into public.staff (user_id, role)
-   select id, 'owner' from auth.users where email = 'nichola@example.com';
+   select id, 'owner' from auth.users
+   where email in ('nichola@example.com', 'morag@example.com', 'you@example.com');
    ```
 
-   Use `'admin'` or `'door'` instead of `'owner'` for other roles.
+   Use `'admin'` or `'door'` instead of `'owner'` for anyone who should have
+   less access.
 
-After that, owners can manage the team in the admin area (coming in a later
-phase).
+4. **Tell each person their temporary password** in person or by phone, not
+   by email. They sign in at **Team sign in** and change it straight away
+   under **Change password** in the admin area.
+
+**If someone forgets their password,** set a new temporary one for them in
+the **SQL Editor** (changing the email and password), then tell them it:
+
+```sql
+update auth.users
+set encrypted_password = extensions.crypt('new temporary password', extensions.gen_salt('bf'))
+where email = 'nichola@example.com';
+```
+
+A "Forgot your password?" email comes once Resend is set up.
 
 ## 3. Settings
 

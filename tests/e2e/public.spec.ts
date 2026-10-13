@@ -27,7 +27,7 @@ test.describe("public pages", () => {
   test("pages fit a 375px phone screen without sideways scrolling", async ({
     page,
   }) => {
-    for (const path of ["/", "/sign-in"]) {
+    for (const path of ["/", "/sign-in", "/sign-in/team"]) {
       await page.goto(path);
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - window.innerWidth,
@@ -113,8 +113,41 @@ test.describe("private areas", () => {
     await expect(page.getByLabel("Email address")).toBeVisible();
   });
 
-  test("the admin area asks people to sign in first", async ({ page }) => {
+  test("the admin area sends people to the team sign-in page", async ({
+    page,
+  }) => {
     await page.goto("/admin");
-    await expect(page).toHaveURL(/\/sign-in\?next=%2Fadmin$/);
+    await expect(page).toHaveURL(/\/sign-in\/team\?next=%2Fadmin$/);
+    await page.goto("/admin/password");
+    await expect(page).toHaveURL(/\/sign-in\/team\?next=%2Fadmin%2Fpassword$/);
+  });
+});
+
+test.describe("team sign-in page", () => {
+  test("asks for an email and password, with labels", async ({ page }) => {
+    await page.goto("/sign-in/team");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Team sign in" }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Email address")).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute(
+      "type",
+      "password",
+    );
+    await expectNoAccessibilityProblems(page);
+  });
+
+  test("explains what's missing", async ({ page }) => {
+    await page.goto("/sign-in/team");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page.getByText("Enter your email address")).toBeVisible();
+    await expect(page.getByText("Enter your password")).toBeVisible();
+    await expectNoAccessibilityProblems(page);
+  });
+
+  test("is linked from the footer", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: "Team sign in" }).click();
+    await expect(page).toHaveURL(/\/sign-in\/team$/);
   });
 });

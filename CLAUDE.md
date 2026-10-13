@@ -550,6 +550,10 @@ The email wording and the terms are kept in `docs/reference/`. The booking detai
   - Until they arrive: one place limit for the whole event, plus the room recorded for each person.
   - A seating plan built from the maps may come later.
 - **Sign-in: email address plus a 6-digit code** emailed each time (Supabase email OTP), with no password. George said "email address and a generated pin, that we choose". We read "that we choose" as "that's our choice", not a fixed PIN that Paper Fox sets for each customer. A fixed PIN was advised against, because staff would know it and short PINs can be guessed. To confirm with George.
+- **Team sign-in (decided 13/10/2026): email and password.** Supabase's built-in email sender only sends 2 emails an hour, and sending through Resend needs the paper-fox.co.uk DNS set up first.
+  - So the team (Nichola, Morag and George) sign in with an email and password on a separate **Team sign in** page.
+  - George creates their accounts in the Supabase dashboard with a temporary password, and they change it in the admin area.
+  - Customers keep the emailed 6-digit code, switched on once Resend is set up. That's needed before the emails phase anyway.
 - **Hosting:** Vercel, as the brief recommends. George will set up the Supabase and Vercel accounts when ready. Until then he gets screenshots.
 
 ### Build order (proposed 13/10/2026, replaces the order of phases 1 to 4 in section 14)

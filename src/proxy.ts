@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { signInPath } from "@/lib/auth/redirects";
 
 /**
  * Runs before every page request to keep the Supabase session cookie fresh.
@@ -44,10 +45,9 @@ export async function proxy(request: NextRequest) {
     (area) => path === area || path.startsWith(`${area}/`),
   );
   if (isPrivate && !data?.claims.sub) {
-    const signIn = request.nextUrl.clone();
-    signIn.pathname = "/sign-in";
-    signIn.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
-    return NextResponse.redirect(signIn);
+    return NextResponse.redirect(
+      new URL(signInPath(path + request.nextUrl.search), request.url),
+    );
   }
 
   return response;

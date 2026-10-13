@@ -24,7 +24,20 @@ export function safeNextPath(
   }
 }
 
+export const CUSTOMER_SIGN_IN = "/sign-in";
+export const TEAM_SIGN_IN = "/sign-in/team";
+
+/** True for the admin area, which the team reach by signing in with a password. */
+export function isTeamArea(path: string): boolean {
+  return path === "/admin" || path.startsWith("/admin/");
+}
+
+/**
+ * The sign-in page for a private page, remembering where to come back to.
+ * The team sign in with a password; customers get an emailed code.
+ */
 export function signInPath(returnTo: string): string {
   const next = safeNextPath(returnTo, "");
-  return next ? `/sign-in?next=${encodeURIComponent(next)}` : "/sign-in";
+  const page = isTeamArea(next) ? TEAM_SIGN_IN : CUSTOMER_SIGN_IN;
+  return next ? `${page}?next=${encodeURIComponent(next)}` : page;
 }
