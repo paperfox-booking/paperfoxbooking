@@ -345,4 +345,39 @@ At the end of each phase:
 
 ## 15. Paper Fox details (filled in from George's answers)
 
-_To be completed after the questions in section 13._
+_Being filled in as George answers the questions in section 13. Anything marked **to confirm** still needs an answer._
+
+### 1. The business
+
+- **Name:** Paper Fox.
+- **Owner's name:** to confirm.
+- **Phone:** +44 (0)24 7693 7383.
+- **Email:** hello@paper-fox.co.uk.
+- **Address:** Paper Fox, Suite 1B, The Hall, Rugby Road, Wolston, CV8 3FZ.
+- **Limited company and company number:** to confirm.
+- **Website:** https://www.paper-fox.co.uk/. The domain has a hyphen (`paper-fox.co.uk`), unlike the `paperfox.co.uk` examples earlier in this file. Use the hyphenated domain.
+- **Logo files:**
+  - `brand/paper-fox-logo-circle.png`: 1280 × 1280, the logo in a teal circle on a transparent background. Use it as the master copy.
+  - `brand/paper-fox-logo-square.webp`: 2000 × 2000, the logo on a square teal background. It's compressed, so its colours are slightly off.
+- **Colours:** taken from the PNG logo. George asked for white plus the logo's colours.
+
+  | Token | Hex | Where it is in the logo | Use in the app |
+  | --- | --- | --- | --- |
+  | `teal` | `#93DED0` | The background circle | Header band, highlights and soft backgrounds |
+  | `coral` | `#EC6851` | The fox's darker side | Primary buttons, accents |
+  | `coral-light` | `#F68262` | The fox's lighter side | Hover states, illustrations |
+  | `cream` | `#E8E2DA` | The fox's chest | Card and section backgrounds |
+  | `ink` | `#221E1F` | The eyes and nose | Body text |
+  | `black` | `#000000` | The "PAPER FOX" wordmark | The logo only |
+  | `white` | `#FFFFFF` | The tail tip | Page background |
+  | `coral-deep` | `#B82C14` | Not in the logo: a darker coral | Links and coral text on white or cream |
+
+- **Contrast (WCAG 2.2 AA needs 4.5:1 for normal text):**
+  - White on coral is 3.15:1, which fails. Ink on coral is 5.23:1, so coral buttons get ink text.
+  - Coral text on white is 3.15:1, which fails. Use `coral-deep` for links and coral text instead (6.16:1 on white, 4.79:1 on cream).
+  - White on teal is 1.54:1, which fails. Ink on teal is 10.68:1, so text on teal is always ink.
+- **Fonts:** to confirm. The wordmark is a tall, condensed, all capitals sans serif. If nobody knows the font, use Bebas Neue (free, and a close match) for headings, and a plain, readable sans serif for body text.
+
+### 2 to 16
+
+To ask.
