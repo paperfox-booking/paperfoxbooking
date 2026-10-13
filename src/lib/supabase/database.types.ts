@@ -246,6 +246,66 @@ export type Database = {
           },
         ];
       };
+      event_costs: {
+        Row: {
+          amount_pence: number;
+          category: string;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          description: string;
+          event_id: string;
+          id: string;
+          notes: string;
+          paid: boolean;
+          sort_order: number;
+          supplier: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          amount_pence: number;
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          description?: string;
+          event_id: string;
+          id?: string;
+          notes?: string;
+          paid?: boolean;
+          sort_order?: number;
+          supplier?: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount_pence?: number;
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          description?: string;
+          event_id?: string;
+          id?: string;
+          notes?: string;
+          paid?: boolean;
+          sort_order?: number;
+          supplier?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_costs_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       event_rooms: {
         Row: {
           capacity: number | null;
