@@ -330,6 +330,21 @@ use them.
 role, remove them, or add someone whose account George has created in
 Supabase. There's always at least one owner: the last one can't be removed.
 
+## What customers see
+
+Once customers can sign in (with a code emailed to them, after the Resend
+set-up), **My account** shows each of their bookings:
+
+- what they booked, the total, what they've paid and what's still to pay,
+  with the date it's due;
+- **how to pay**: the bank details with their booking reference;
+- the payments received;
+- their confirmation PDF (once their deposit has arrived), the booking
+  details and the terms, and the event's Facebook group.
+
+Bookings are matched by email address, so a customer must sign in with the
+email address on their booking.
+
 ## Coming next
 
 Bringing in the March 2027 spreadsheet on the live site, online booking with

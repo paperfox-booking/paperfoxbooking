@@ -942,6 +942,28 @@ export type Database = {
         };
         Returns: string;
       };
+      customer_settings: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          address: string;
+          bank_account_name: string;
+          bank_account_number: string;
+          bank_name: string;
+          bank_sort_code: string;
+          business_name: string;
+          company_number: string;
+          contact_email: string;
+          facebook_group_url: string;
+          facebook_url: string;
+          instagram_url: string;
+          legal_name: string;
+          phone: string;
+          sign_off: string;
+          terms_text: string;
+          terms_version: number;
+          website: string;
+        }[];
+      };
       import_bookings: {
         Args: { people: Json; rooms: Json; target_event_id: string };
         Returns: number;
