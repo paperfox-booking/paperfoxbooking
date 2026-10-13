@@ -35,10 +35,17 @@ For each project, in the Supabase dashboard:
    - make sure **Email** is turned on;
    - set **Email OTP length** to 6;
    - set **Email OTP expiration** to 600 seconds (10 minutes).
-2. **Authentication → Emails → Templates**: open both **Magic link** and
-   **Confirm sign up**. Replace each one's subject and message with the
-   wording in `supabase/templates/sign-in-code.html`. It must contain
-   `{{ .Token }}`, which is where the 6-digit code goes.
+2. **Authentication → Emails → Templates**: open **Magic link or OTP** and
+   **Confirm sign up**. Replace each one's subject with
+   `Your Paper Fox sign-in code` and its message with the wording in
+   `supabase/templates/sign-in-code.html`. It must contain `{{ .Token }}`,
+   which is where the 6-digit code goes.
+
+   Supabase only lets you edit these once custom SMTP is set up, so do the
+   [Resend](#resend-sending-emails-needed-for-sign-in-codes) steps first.
+   Until then its default emails contain a sign-in link instead of a code,
+   which this site doesn't use, so signing in won't work yet.
+
 3. **Authentication → URL Configuration**: set **Site URL** to the site's
    address, for example `https://book.paper-fox.co.uk` (or the Vercel address
    until the real one is ready).
