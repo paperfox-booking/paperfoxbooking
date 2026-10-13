@@ -40,9 +40,8 @@ async function Dashboard() {
   const upcoming = (await listEventProfits()).filter(
     (event) => daysBetween(today, toUkDateInput(event.endsAt)) >= 0,
   );
-  const attention = can(user.staffRole, "attendees.message")
-    ? await needsAttention()
-    : [];
+  const canMessage = can(user.staffRole, "attendees.message");
+  const attention = canMessage ? await needsAttention() : [];
 
   return (
     <div className="mt-4 space-y-8">
@@ -133,6 +132,19 @@ async function Dashboard() {
                         People booked
                         <span className="sr-only"> on {event.title}</span>
                       </Link>
+                      {daysBetween(today, toUkDateInput(event.startsAt)) <=
+                      1 ? (
+                        <Link href={`/admin/events/${event.id}/check-in`}>
+                          Check in
+                          <span className="sr-only"> for {event.title}</span>
+                        </Link>
+                      ) : null}
+                      {canMessage ? (
+                        <Link href={`/admin/events/${event.id}/email`}>
+                          Email people
+                          <span className="sr-only"> on {event.title}</span>
+                        </Link>
+                      ) : null}
                       {canSeeMoney ? (
                         <Link href={`/admin/events/${event.id}/costs`}>
                           Profit and loss

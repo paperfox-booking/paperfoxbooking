@@ -17,6 +17,7 @@ import {
   formatUkLongDate,
   toUkDateInput,
 } from "@/lib/dates";
+import { countWaiting } from "@/lib/bookings/waitlist";
 import { countBooked, getEvent, type AdminEvent } from "@/lib/events/admin";
 import { balanceAfterDeposit, describeTimeBefore } from "@/lib/events/rules";
 import { formatPrice } from "@/lib/money";
@@ -64,9 +65,11 @@ async function EventDetails({
   if (!access.allowed) return <NotAllowed access={access} />;
   if (!isUuid(eventId)) notFound();
 
-  const [event, booked, { notice }] = await Promise.all([
+  const canSeeWaiting = can(access.user.staffRole, "bookings.manage");
+  const [event, booked, waiting, { notice }] = await Promise.all([
     getEvent(eventId),
     countBooked(eventId),
+    canSeeWaiting ? countWaiting(eventId) : Promise.resolve(0),
     searchParams,
   ]);
   if (!event) notFound();
@@ -98,7 +101,7 @@ async function EventDetails({
         </Button>
         <Button asChild variant="secondary">
           <Link href={`/admin/events/${event.id}/waiting-list`}>
-            Waiting list
+            Waiting list{waiting ? ` (${waiting})` : ""}
           </Link>
         </Button>
         <Button asChild variant="secondary">
