@@ -347,14 +347,25 @@ At the end of each phase:
 
 _Being filled in as George answers the questions in section 13. Anything marked **to confirm** still needs an answer._
 
+Sources so far:
+- George's answers in chat.
+- His March 2027 booking spreadsheet. It holds real customer data, so it is **not** in this repository and must never be added.
+- His three standard emails (B1, B2, B3) and their attachments: the booking details PDF, the terms and conditions, and the confirmation PDF.
+
+The email wording and the terms are kept in `docs/reference/`. The booking details PDF is not kept, because it includes the bank details.
+
 ### 1. The business
 
-- **Name:** Paper Fox.
-- **Owner's name:** to confirm.
+- **Name:** Paper Fox. The legal name is **Paper Fox Events Ltd**, company number **13717760**, both from the footer of the terms.
+- **People:** Nichola and Morag run it and sign every email "Nichola & Morag". Still to confirm: which of them is the owner in the system's terms, and their surnames.
 - **Phone:** +44 (0)24 7693 7383.
 - **Email:** hello@paper-fox.co.uk.
 - **Address:** Paper Fox, Suite 1B, The Hall, Rugby Road, Wolston, CV8 3FZ.
-- **Limited company and company number:** to confirm.
+- **Social:**
+  - Facebook page: https://www.facebook.com/PaperFoxEvents/
+  - Facebook group: www.facebook.com/groups/paperfoxevents/ (there is also a private group for each event)
+  - Instagram: https://www.instagram.com/paperfoxevents/
+- **Bank details for transfers:** in the booking details PDF, in the name of Paper Fox Events Ltd. They go into the settings screen, never into code or this file.
 - **Website:** https://www.paper-fox.co.uk/. The domain has a hyphen (`paper-fox.co.uk`), unlike the `paperfox.co.uk` examples earlier in this file. Use the hyphenated domain.
 - **Logo files:**
   - `brand/paper-fox-logo-circle.png`: 1280 × 1280, the logo in a teal circle on a transparent background. Use it as the master copy.
@@ -378,6 +389,145 @@ _Being filled in as George answers the questions in section 13. Anything marked 
   - White on teal is 1.54:1, which fails. Ink on teal is 10.68:1, so text on teal is always ink.
 - **Fonts:** to confirm. The wordmark is a tall, condensed, all capitals sans serif. If nobody knows the font, use Bebas Neue (free, and a close match) for headings, and a plain, readable sans serif for body text.
 
-### 2 to 16
+### 2. The events
+
+- **What they are:** papercraft and scrapbooking "crop" weekends, also called the "Paper Fox Escape" and the "Coventry Crop Weekend". The terms say an event can be a "crop, escape, retreat, class".
+- **How often:** 4 a year, in March, June, September and November.
+- **When:** Friday to Sunday. For example, 19 to 21 March 2027.
+- **Venue:** Holiday Inn Coventry, Hinckley Road, Coventry, CV2 2HP (024 7509 7600). To confirm: is it always this venue?
+- **Size:** March 2027 has 110 people on the list, 4 of them free places for the team and helpers.
+  - The main room takes 78 at most ("prefer 74").
+  - The rest are listed against "2nd Room A" (9), "2nd Room B" (13) and "Welsh" (10).
+  - To confirm: what these rooms are, how many each takes, and whether "Welsh" is a room or a group.
+- **Everyone gets** their own 4ft crop table.
+- **Hotel rooms:** customers book directly with the hotel at Paper Fox's rate, and the hotel needs a card to hold the room. The booking system doesn't handle hotel rooms, but shows the details. Other local hotels are suggested too.
+- **Each event** has its own private Facebook group.
+
+### 3. What people book
+
+- **One place per person**, in one of two options:
+
+  | Option | Times | Price | Deposit |
+  | --- | --- | --- | --- |
+  | Weekend (4pm start) | Friday 4pm to Sunday 5pm | £195 | £60 |
+  | Friday Kick Starter (9am start) | Friday 9am to Sunday 5pm | £245 | £85 |
+
+- **The Kick Starter adds:** an extra self-paced class kit, Friday lunch, refreshments and early access to the shop.
+- **Everyone gets:**
+  - a welcome goody bag, challenges and activities;
+  - tea and coffee throughout;
+  - a light lunch on Saturday and Sunday, and an evening meal on Saturday;
+  - free parking and wifi;
+  - use of the die-cutting tools, and access to the craft shops.
+- **Other prices:** the spreadsheet also has 2 people at £225 and 2 at £235. To confirm: are those discounts or old prices?
+- **Class kits:** optional self-paced kits go on sale to people booked about 4 weeks before each event, before the public can buy them. To confirm: should the system sell these?
+- **Free places:** the team and helpers take free places, listed with "AA" at the top of the spreadsheet so they sort first.
+
+### 4. Paying
+
+- **Today:** everything is paid by bank transfer, referenced with the person's name and the event month. Paper Fox acknowledges payments within 7 working days.
+- **When bookings open:** about 12 months before the event.
+- **Holding a place:** a booking form reserves a place until the deposit arrives. To confirm how long, because the sources disagree:
+  - the B1 email gives a fixed date ("before the 30th March 2026");
+  - the terms say "within 48 hours".
+- **Deposit:** £60 (4pm start) or £85 (9am start). It's non-refundable and non-transferable.
+- **Balance:** due 6 weeks before the event, with a reminder before then. To confirm: the March 2027 booking details give 26/01/2027, which is 7 weeks and 3 days before. Is the due date set by hand for each event?
+- **Late bookings:** booking within 6 weeks of the event means paying in full straight away.
+- **Paying in parts:** this already happens. The spreadsheet shows payments of £65, £100, £120 and £125.
+- **Card payments:** to confirm. This is the brief's biggest open question, because sections 1, 3 and 7 assume Stripe card payments.
+
+### 5. Cancellations and refunds (from the 2026 terms)
+
+- **If Paper Fox cancels:** everything paid is refunded in full.
+- **If the customer cancels more than 6 weeks before:** a £60 admin fee is kept and the rest is refunded. To confirm: does that mean £60, not the £85 Kick Starter deposit, which the terms also call non-refundable?
+- **If the customer cancels within 6 weeks:** nothing is refunded.
+  - If Paper Fox resells the place, a 25% admin charge on the full price is kept, as well as the deposit.
+  - What's left becomes **credit** towards a future event or Paper Fox products.
+- **Sending someone else:** a customer can send a replacement, but only with Paper Fox's written approval. Any money is settled privately between them. Reselling a place on social media or elsewhere is banned.
+- **Goody bags and kits:** if someone cancels within 6 weeks, has paid in full and the place isn't filled, these are posted to them after the event.
+- **Unpaid balances:** to confirm what happens if the balance isn't paid by its due date.
+
+### 8. Attendee details (from the spreadsheet)
+
+- **Per person:**
+  - name, email and mobile;
+  - emergency contact: name, relationship and phone;
+  - dietary and health needs;
+  - notes, mostly seating requests ("sit with …");
+  - start time (9am or 4pm);
+  - room.
+- **Health information** is special category data under UK GDPR. Only collect it with explicit consent, show it only to the staff who need it, and delete it after the event (the retention period is to confirm).
+
+### 10. Extras
+
+- **Waiting list: yes.** When an event is full, people join a reserve list. Staff pick someone and offer them a place, and that person accepts and pays. George compares it to turning a quote into a contract.
+- **Discount codes, gift vouchers, add-ons:** to confirm. Class kits are the likely add-on (see 3).
+
+### 11. The team
+
+- Nichola and Morag, plus helpers who take free places at events. To confirm: who needs to sign in, and what each person should be able to do.
+
+### 12. Existing data
+
+- **The March 2027 spreadsheet:** one row per person, with these columns:
+  - name and email;
+  - "Friday Cropping" (start time) and "Room 2";
+  - dietary and health;
+  - total due, money received and balance due;
+  - mobile, emergency contact and notes;
+  - "Booking Sent", the date and which email was sent.
+- **Its totals:** £23,310 due and £8,150 received. 98 people have paid a deposit or part, 4 have paid in full, and 4 have paid nothing yet.
+- **Problems spotted, to check with George:**
+  - The "Balance Due" total says £13,920, but the rows add up to £15,160 still owed, a gap of £1,240.
+    - Rows 15, 17, 75, 89, 102, 103 and 109 have no balance formula, which leaves out £1,080.
+    - Row 31 has 0 typed in where £160 is owed.
+  - 6 people marked "9AM" are charged £195, and 1 marked "4PM" is charged £245.
+  - Row 115 sits below the totals, under "Waiting list for each event".
+- **The March 2027 bookings need importing.** To confirm: are there spreadsheets for other events?
+
+### Emails sent today
+
+- **B1, booking received:**
+  - the place is reserved until the deposit arrives by a date;
+  - prices and deposit options;
+  - advice on booking the hotel;
+  - deposits are non-refundable;
+  - what happens next.
+  - Attachments: the event's booking details PDF and the terms PDF.
+- **B2, deposit received:**
+  - the place is secured;
+  - the balance is due 6 weeks before, with a reminder.
+  - Attachment: the event's confirmation PDF (what's included, the Facebook group and the hotel).
+- **B3, paid in full:** the same as B2, without the balance line.
+- **"Thkd for Pmt":** the spreadsheet also records this. To confirm: is it a separate email for when the balance is paid?
+- **Other emails mentioned:**
+  - a balance reminder;
+  - class kit news about 4 weeks before;
+  - full joining details a few days before (arrival, timetable, local amenities, FAQs).
+- **Sign-off:** every email is signed "Nichola & Morag, Paper Fox", with the social links.
+- **Copy errors** in the current documents, which templates built from event details would prevent:
+  - the March 2027 confirmation PDF links to the November 2026 Facebook group;
+  - the hotel rates differ between the two PDFs (£74 and £84 in one, £72 and £82 in the other).
+
+### What George wants the system to do (his words, tidied)
+
+- Book the 9am start (£245) or the 4pm start (£195).
+- Take a deposit when booking (about 12 months before), with the balance due 6 weeks before.
+- Send the B1, B2 and B3 emails, each with its own attachments.
+- Send emails chasing people for money.
+- Keep a reserve list when an event is full, and offer places from it.
+- Report on sales **and profit**.
+
+### Where this changes the brief (proposed, waiting for George's agreement)
+
+- **Payments:** bank transfer is how Paper Fox is paid today, and the brief assumes card payments through Stripe. Waiting on question 4.
+- **Profit reports:** the brief only has sales reports. Profit needs each event's costs (room hire, food, goody bags and so on), so the costs need recording.
+- **Waiting list:** in, with offers that have a time limit.
+- **Credit:** customers can hold credit for future events or products, as the terms describe.
+- **Replacement attendees:** staff approve a place moving to someone else.
+- **Rooms:** places may need assigning to rooms, each with its own limit.
+- **Event documents:** each event needs a "booking details" and a "confirmation" document. The system could produce these from the event's details, or staff could upload their own.
+
+### 6, 7, 9, 13 to 16
 
 To ask.
