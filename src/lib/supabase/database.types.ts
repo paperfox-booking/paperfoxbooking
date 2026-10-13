@@ -193,47 +193,62 @@ export type Database = {
       };
       email_log: {
         Row: {
+          attachments: string[];
+          body: string;
           booking_id: string | null;
           created_at: string;
           created_by: string | null;
           customer_id: string | null;
+          error: string;
           id: string;
           note: string;
           outside_system: boolean;
+          provider_message_id: string | null;
           sent_at: string | null;
           sent_on: string | null;
           status: string;
           subject: string;
           template: string;
+          to_email: string;
         };
         ComputedFields: never;
         Insert: {
+          attachments?: string[];
+          body?: string;
           booking_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           customer_id?: string | null;
+          error?: string;
           id?: string;
           note?: string;
           outside_system?: boolean;
+          provider_message_id?: string | null;
           sent_at?: string | null;
           sent_on?: string | null;
           status?: string;
           subject?: string;
           template: string;
+          to_email?: string;
         };
         Update: {
+          attachments?: string[];
+          body?: string;
           booking_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           customer_id?: string | null;
+          error?: string;
           id?: string;
           note?: string;
           outside_system?: boolean;
+          provider_message_id?: string | null;
           sent_at?: string | null;
           sent_on?: string | null;
           status?: string;
           subject?: string;
           template?: string;
+          to_email?: string;
         };
         Relationships: [
           {
@@ -251,6 +266,55 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      email_templates: {
+        Row: {
+          attach_booking_details: boolean;
+          attach_confirmation: boolean;
+          attach_terms: boolean;
+          body: string;
+          created_at: string;
+          description: string;
+          id: string;
+          key: string;
+          name: string;
+          sort_order: number;
+          subject: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          attach_booking_details?: boolean;
+          attach_confirmation?: boolean;
+          attach_terms?: boolean;
+          body: string;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          key: string;
+          name: string;
+          sort_order?: number;
+          subject: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          attach_booking_details?: boolean;
+          attach_confirmation?: boolean;
+          attach_terms?: boolean;
+          body?: string;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          key?: string;
+          name?: string;
+          sort_order?: number;
+          subject?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
       };
       event_costs: {
         Row: {
@@ -542,6 +606,94 @@ export type Database = {
         };
         Relationships: [];
       };
+      settings: {
+        Row: {
+          address: string;
+          bank_account_name: string;
+          bank_account_number: string;
+          bank_name: string;
+          bank_sort_code: string;
+          business_name: string;
+          company_number: string;
+          contact_email: string;
+          created_at: string;
+          email_reply_to: string;
+          email_test_address: string;
+          facebook_group_url: string;
+          facebook_url: string;
+          id: string;
+          instagram_url: string;
+          legal_name: string;
+          phone: string;
+          send_payment_emails: boolean;
+          sign_off: string;
+          singleton: boolean;
+          terms_text: string;
+          terms_updated_at: string;
+          terms_version: number;
+          updated_at: string;
+          updated_by: string | null;
+          website: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          address?: string;
+          bank_account_name?: string;
+          bank_account_number?: string;
+          bank_name?: string;
+          bank_sort_code?: string;
+          business_name?: string;
+          company_number?: string;
+          contact_email?: string;
+          created_at?: string;
+          email_reply_to?: string;
+          email_test_address?: string;
+          facebook_group_url?: string;
+          facebook_url?: string;
+          id?: string;
+          instagram_url?: string;
+          legal_name?: string;
+          phone?: string;
+          send_payment_emails?: boolean;
+          sign_off?: string;
+          singleton?: boolean;
+          terms_text?: string;
+          terms_updated_at?: string;
+          terms_version?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          website?: string;
+        };
+        Update: {
+          address?: string;
+          bank_account_name?: string;
+          bank_account_number?: string;
+          bank_name?: string;
+          bank_sort_code?: string;
+          business_name?: string;
+          company_number?: string;
+          contact_email?: string;
+          created_at?: string;
+          email_reply_to?: string;
+          email_test_address?: string;
+          facebook_group_url?: string;
+          facebook_url?: string;
+          id?: string;
+          instagram_url?: string;
+          legal_name?: string;
+          phone?: string;
+          send_payment_emails?: boolean;
+          sign_off?: string;
+          singleton?: boolean;
+          terms_text?: string;
+          terms_updated_at?: string;
+          terms_version?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          website?: string;
+        };
+        Relationships: [];
+      };
       staff: {
         Row: {
           created_at: string;
@@ -564,6 +716,28 @@ export type Database = {
           role?: Database["public"]["Enums"]["staff_role"];
           updated_at?: string;
           user_id?: string;
+        };
+        Relationships: [];
+      };
+      terms_versions: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          terms_text: string;
+          version: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          terms_text: string;
+          version: number;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          terms_text?: string;
+          version?: number;
         };
         Relationships: [];
       };
@@ -692,6 +866,20 @@ export type Database = {
       import_bookings: {
         Args: { people: Json; rooms: Json; target_event_id: string };
         Returns: number;
+      };
+      log_email: {
+        Args: {
+          attachments: string[];
+          body: string;
+          booking_id: string;
+          error?: string;
+          provider_message_id?: string;
+          sent: boolean;
+          subject: string;
+          template: string;
+          to_email: string;
+        };
+        Returns: string;
       };
       set_checked_in: {
         Args: { arrived: boolean; booking_id: string };
