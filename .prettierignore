@@ -1,0 +1,11 @@
+pnpm-lock.yaml
+.next
+node_modules
+coverage
+test-results
+playwright-report
+supabase/.temp
+src/lib/supabase/database.types.ts
+docs/reference/*.pdf
+AGENTS.md
+CLAUDE.md
