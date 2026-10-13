@@ -58,9 +58,41 @@ where this says, it will be close by.
    [section 3](#3-settings).
 4. Click **Deploy**. Every pull request then gets its own preview link.
 
+### Resend: sending emails (needed for sign-in codes)
+
+Supabase's built-in email sender only sends 2 emails an hour and can't be
+raised: it's for testing. Real sign-in codes (and later every booking email)
+go through Resend, from Paper Fox's own address.
+
+1. Go to [resend.com](https://resend.com) and sign up with the Paper Fox email
+   address.
+2. **Domains → Add domain**: enter `paper-fox.co.uk` and choose the
+   **London (eu-west-2)** region if asked. Resend lists a few DNS records.
+3. Add those records wherever `paper-fox.co.uk`'s DNS is managed (the company
+   the domain is registered with, or whoever runs the website). They only add a
+   signature and a `send` sub-address, so they don't affect the existing
+   `hello@paper-fox.co.uk` mailbox. Back in Resend, click **Verify**; it can
+   take from a few minutes to a few hours.
+4. **API Keys → Create API key**: name it `Supabase sign-in`, permission
+   **Sending access**, and copy it.
+5. In Supabase, **Authentication → Emails → SMTP Settings**, turn on **Enable
+   custom SMTP** and fill in:
+
+   | Field        | Value                          |
+   | ------------ | ------------------------------ |
+   | Sender email | `bookings@paper-fox.co.uk`     |
+   | Sender name  | `Paper Fox`                    |
+   | Host         | `smtp.resend.com`              |
+   | Port         | `465`                          |
+   | Username     | `resend`                       |
+   | Password     | the Resend API key from step 4 |
+
+6. In Supabase, **Authentication → Rate Limits**: raise **Rate limit for
+   sending emails** to `100` an hour. (Resend's free plan sends up to 100 a
+   day and 3,000 a month, which is plenty for sign-in codes.)
+
 ### Later
 
-- **Resend**, for sending emails from Paper Fox's own address.
 - **Sentry**, for error reports.
 - **Stripe**, only if card payments are wanted. For now Paper Fox takes bank
   transfers only.
