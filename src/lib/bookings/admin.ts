@@ -1,7 +1,14 @@
 import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getEvent } from "@/lib/events/admin";
 import type { AuditEntry } from "./history";
 import { comparePeople, toPersonRow, type PersonRow } from "./people";
+import {
+  sheetPeople,
+  type SheetOption,
+  type SheetPerson,
+  type SheetRoom,
+} from "./sheets";
 
 export type { PersonRow } from "./people";
 
@@ -21,7 +28,7 @@ export interface RoomRecord {
 
 const BOOKING_COLUMNS = `
   id, reference, ticket_type_id, room_id, price_pence, deposit_pence,
-  price_note, notes, payment_notes, cancelled_at,
+  price_note, notes, payment_notes, cancelled_at, checked_in_at,
   customer:customers(id, full_name, email, phone, emergency_contact, dietary_health, is_team),
   payments(amount_pence, deleted_at),
   email_log(template, sent_on, created_at)
@@ -363,4 +370,30 @@ export async function listPersonBookings(customerId: string): Promise<
       balanceDueOn: booking.event!.balance_due_on,
     }))
     .sort((a, b) => b.eventStartsAt.localeCompare(a.eventStartsAt));
+}
+
+export interface EventSheet {
+  event: NonNullable<Awaited<ReturnType<typeof getEvent>>>;
+  options: SheetOption[];
+  rooms: SheetRoom[];
+  people: SheetPerson[];
+}
+
+/** Everything the printable sheets need for one event. */
+export async function getEventSheet(
+  eventId: string,
+): Promise<EventSheet | null> {
+  const [event, rows, rooms] = await Promise.all([
+    getEvent(eventId),
+    listEventPeople(eventId),
+    listRooms(eventId),
+  ]);
+  if (!event) return null;
+  const options = event.options.map((option) => ({
+    id: option.id,
+    name: option.name,
+    description: option.description,
+    startsAt: option.starts_at,
+  }));
+  return { event, options, rooms, people: sheetPeople(rows, options, rooms) };
 }

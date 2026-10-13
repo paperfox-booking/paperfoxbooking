@@ -66,3 +66,21 @@
     outline-offset: 2px;
   }
 }
+
+/* Printing: plain black on white, no menus, using the whole page. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    background: white;
+    font-size: 11pt;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}

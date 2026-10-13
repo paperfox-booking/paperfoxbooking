@@ -24,7 +24,7 @@ const NAV = [
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
     <>
-      <header className="border-b-4 border-coral bg-white">
+      <header className="border-b-4 border-coral bg-white print:hidden">
         <div className="mx-auto flex max-w-[110rem] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <BrandMark href="/admin" suffix="Admin" />
           <nav aria-label="Admin">
@@ -43,8 +43,10 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
           </nav>
         </div>
       </header>
-      <main id="main" className="flex-1 bg-cream-light">
-        <div className="mx-auto max-w-[110rem] px-4 py-8">{children}</div>
+      <main id="main" className="flex-1 bg-cream-light print:bg-white">
+        <div className="mx-auto max-w-[110rem] px-4 py-8 print:max-w-none print:p-0">
+          {children}
+        </div>
       </main>
     </>
   );

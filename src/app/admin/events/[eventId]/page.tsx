@@ -93,6 +93,14 @@ async function EventDetails({
             People booked ({booked} of {event.capacity})
           </Link>
         </Button>
+        <Button asChild variant="secondary">
+          <Link href={`/admin/events/${event.id}/check-in`}>Check in</Link>
+        </Button>
+        <Button asChild variant="secondary">
+          <Link href={`/admin/events/${event.id}/print`}>
+            Printing and catering
+          </Link>
+        </Button>
         {canManage ? (
           <>
             <Button asChild variant="secondary">

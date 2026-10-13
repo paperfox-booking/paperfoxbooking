@@ -165,6 +165,48 @@ Open an event and choose **Profit and loss**:
 year or all of them, and downloads as a CSV for your accountant. Copying an
 event copies its costs too, as unpaid estimates to update.
 
+## The catering sheet for the hotel
+
+Open the event and choose **Printing and catering**, then **Catering
+sheet**. It shows:
+
+- how many people are on each option (the 4pm and 9am starts), the team, and
+  what each option includes, for example Friday lunch;
+- everyone's dietary needs, with their option and room.
+
+Print it, save it as a PDF from the print window, or choose **Download as a
+spreadsheet (CSV)** to email to the hotel. The dietary column comes from each
+person's "Dietary and health" box, so it can include health information:
+check it only shares what the hotel needs before you send it.
+
+## Printing for the weekend
+
+**Printing and catering** also has, each ready to print on A4:
+
+- **Register:** everyone, the team first, with a box to tick as they arrive,
+  their start time, room, dietary needs and anything they still owe;
+- **Name badges:** eight to a page, with first names large;
+- **Room lists:** who's in each room, one room to a page, for the doors;
+- **Emergency contacts:** mobiles, emergency contacts and health needs. It's
+  private: keep it with you and shred it after the event.
+
+Choose **Print** at the top of each one. The menu and buttons don't print.
+
+## Checking people in
+
+Open the event and choose **Check in**. It's made for a phone at the door:
+
+1. Start typing someone's name in **Find someone**.
+2. Tap **Arrived**. It shows "Here" with the time.
+3. Tapped the wrong person? Tap **Undo**.
+
+The count at the top shows how many are here. Tick **Only people not here
+yet** to see who's missing. Several of you can check people in at once: each
+phone updates every 30 seconds. Owners and admins also see anything someone
+still owes, to collect on the day; door staff don't see money.
+
+Tip: add the site to your phone's home screen, so it opens like an app.
+
 ## Coming next
 
 Sending the B1, B2 and B3 emails from the system (with balance reminders and

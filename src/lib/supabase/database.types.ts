@@ -47,6 +47,8 @@ export type Database = {
         Row: {
           cancel_reason: string;
           cancelled_at: string | null;
+          checked_in_at: string | null;
+          checked_in_by: string | null;
           created_at: string;
           created_by: string | null;
           currency: string;
@@ -68,6 +70,8 @@ export type Database = {
         Insert: {
           cancel_reason?: string;
           cancelled_at?: string | null;
+          checked_in_at?: string | null;
+          checked_in_by?: string | null;
           created_at?: string;
           created_by?: string | null;
           currency?: string;
@@ -88,6 +92,8 @@ export type Database = {
         Update: {
           cancel_reason?: string;
           cancelled_at?: string | null;
+          checked_in_at?: string | null;
+          checked_in_by?: string | null;
           created_at?: string;
           created_by?: string | null;
           currency?: string;
@@ -686,6 +692,10 @@ export type Database = {
       import_bookings: {
         Args: { people: Json; rooms: Json; target_event_id: string };
         Returns: number;
+      };
+      set_checked_in: {
+        Args: { arrived: boolean; booking_id: string };
+        Returns: string;
       };
     };
     Enums: {

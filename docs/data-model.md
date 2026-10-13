@@ -184,6 +184,8 @@ erDiagram
     text source "staff, import or online"
     timestamptz cancelled_at
     text cancel_reason
+    timestamptz checked_in_at "when they arrived"
+    uuid checked_in_by FK
   }
   EVENT_ROOMS {
     uuid id PK
@@ -237,6 +239,9 @@ erDiagram
   already on file (matched by email).
 - **`audit_log`** records every change to events, options, bookings,
   payments and costs, with who made it. Nobody can change it.
+- **`public.set_checked_in(booking_id, arrived)`** marks someone as arrived,
+  or undoes it. Any team member can, door staff included, but only for a
+  booking that isn't cancelled. Pressing Arrived twice keeps the first time.
 
 ### Who can do what with people and money
 
@@ -246,10 +251,12 @@ erDiagram
 | Read everyone's records and bookings              |          | ✓          | ✓     | ✓     |
 | Add and change people, bookings and rooms         |          |            | ✓     | ✓     |
 | Read and record payments; read and record emails  |          |            | ✓     | ✓     |
+| Check people in on the day                        |          | ✓          | ✓     | ✓     |
 | Read and change costs; read the audit log         |          |            | ✓     | ✓     |
 | Edit or delete a payment, or change the audit log |          |            |       |       |
 
-`tests/db/bookings.test.ts` and `tests/db/costs.test.ts` prove these rules.
+`tests/db/bookings.test.ts`, `tests/db/costs.test.ts` and
+`tests/db/check-in.test.ts` prove these rules.
 
 ## Helper functions
 

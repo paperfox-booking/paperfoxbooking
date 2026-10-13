@@ -25,6 +25,8 @@ export interface PersonRow {
   paymentNotes: string;
   cancelled: boolean;
   paidPence: number;
+  /** When they arrived at the event, if they have. */
+  checkedInAt: string | null;
   lastEmail: { template: EmailTemplate; sentOn: string | null } | null;
 }
 
@@ -39,6 +41,7 @@ export type BookingSelect = {
   notes: string;
   payment_notes: string;
   cancelled_at: string | null;
+  checked_in_at: string | null;
   customer: {
     id: string;
     full_name: string;
@@ -78,6 +81,7 @@ export function toPersonRow(booking: BookingSelect): PersonRow {
     paymentNotes: booking.payment_notes,
     cancelled: booking.cancelled_at !== null,
     paidPence: sumPayments(booking.payments),
+    checkedInAt: booking.checked_in_at,
     lastEmail: latest
       ? { template: latest.template as EmailTemplate, sentOn: latest.sent_on }
       : null,
