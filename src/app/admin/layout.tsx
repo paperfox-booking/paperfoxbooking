@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
     <>
       <header className="border-b-4 border-coral bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-[110rem] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <BrandMark href="/admin" suffix="Admin" />
           <nav aria-label="Admin">
             <ul className="flex flex-wrap items-center gap-1">
@@ -44,7 +44,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
         </div>
       </header>
       <main id="main" className="flex-1 bg-cream-light">
-        <div className="mx-auto max-w-6xl px-4 py-8">{children}</div>
+        <div className="mx-auto max-w-[110rem] px-4 py-8">{children}</div>
       </main>
     </>
   );

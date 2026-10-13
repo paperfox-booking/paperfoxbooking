@@ -338,20 +338,20 @@ export function PeopleGrid({
           <thead className="bg-cream-light">
             <tr>
               <Th sticky>Name</Th>
-              <Th>Team</Th>
-              <Th>Email</Th>
+              <Th>Ref</Th>
               <Th>Option</Th>
               <Th>Room</Th>
-              <Th>Dietary and health</Th>
               {canSeeMoney ? (
                 <>
                   <Th numeric>Total due</Th>
                   <Th numeric>Received</Th>
                   <Th numeric>Balance</Th>
-                  {canEdit ? <Th>Pay</Th> : null}
+                  {canEdit ? <Th>Pay today</Th> : null}
                 </>
               ) : null}
+              <Th>Dietary and health</Th>
               <Th>Mobile</Th>
+              <Th>Email</Th>
               <Th>Emergency contact</Th>
               <Th>Notes</Th>
               {canSeeMoney ? (
@@ -360,6 +360,7 @@ export function PeopleGrid({
                   <Th>Last email</Th>
                 </>
               ) : null}
+              <Th>Team</Th>
             </tr>
           </thead>
           <tbody>
@@ -374,7 +375,11 @@ export function PeopleGrid({
                 extra: { type?: string; inputMode?: "email" | "tel" } = {},
               ) => {
                 const key = `${row.bookingId}:${field}`;
-                if (!editable) return <span className={width}>{value}</span>;
+                if (!editable) {
+                  return (
+                    <span className={cn("block px-2", width)}>{value}</span>
+                  );
+                }
                 return (
                   <input
                     key={`${key}:${value}`}
@@ -401,6 +406,7 @@ export function PeopleGrid({
                 value: string,
                 choices: { id: string; name: string }[],
                 empty: string,
+                width = "w-56",
               ) => {
                 const key = `${row.bookingId}:${field}`;
                 const current = choices.find((choice) => choice.id === value);
@@ -414,7 +420,7 @@ export function PeopleGrid({
                     onChange={(event) =>
                       void save(row, field, label, event.currentTarget.value)
                     }
-                    className={cn(cellInput, "w-56", statusClass(status[key]))}
+                    className={cn(cellInput, width, statusClass(status[key]))}
                   >
                     <option value="">{empty}</option>
                     {choices.map((choice) => (
@@ -430,49 +436,23 @@ export function PeopleGrid({
                 <tr
                   key={row.bookingId}
                   className={cn(
-                    "border-t border-cream align-top",
+                    "border-t border-cream align-middle",
                     row.cancelled && "text-stone",
                   )}
                 >
-                  <td className="sticky left-0 z-10 border-r border-cream bg-white px-2 py-2">
+                  <td className="sticky left-0 z-10 border-r border-cream bg-white px-1 py-1">
                     {text("fullName", "Name", row.fullName, "w-48")}
-                    <div className="mt-1 text-sm">
+                  </td>
+                  <Td>
+                    <span className="block w-28 px-1 text-sm whitespace-nowrap">
                       <Link href={`/admin/bookings/${row.bookingId}`}>
                         {row.reference}
                         <span className="sr-only"> for {row.fullName}</span>
                       </Link>
                       {row.cancelled ? (
-                        <span className="ml-2 font-bold">Cancelled</span>
+                        <span className="block font-bold">Cancelled</span>
                       ) : null}
-                    </div>
-                  </td>
-                  <Td>
-                    {editable ? (
-                      <input
-                        type="checkbox"
-                        aria-label={`${row.fullName} is on the team`}
-                        checked={row.isTeam}
-                        onChange={(event) =>
-                          void save(
-                            row,
-                            "isTeam",
-                            "Team",
-                            String(event.currentTarget.checked),
-                          )
-                        }
-                        className="mt-2 size-6 accent-coral-deep"
-                      />
-                    ) : row.isTeam ? (
-                      "Yes"
-                    ) : (
-                      ""
-                    )}
-                  </Td>
-                  <Td>
-                    {text("email", "Email", row.email, "w-64", {
-                      type: "email",
-                      inputMode: "email",
-                    })}
+                    </span>
                   </Td>
                   <Td>
                     {select(
@@ -484,37 +464,33 @@ export function PeopleGrid({
                     )}
                   </Td>
                   <Td>
-                    {select("roomId", "Room", row.roomId, rooms, "No room")}
-                  </Td>
-                  <Td>
-                    {text(
-                      "dietaryHealth",
-                      "Dietary and health",
-                      row.dietaryHealth,
-                      "w-64",
+                    {select(
+                      "roomId",
+                      "Room",
+                      row.roomId,
+                      rooms,
+                      "No room",
+                      "w-40",
                     )}
                   </Td>
                   {canSeeMoney ? (
                     <>
+                      <Td numeric>{formatPrice(row.pricePence)}</Td>
                       <Td numeric>
-                        <span className="block pt-2">
-                          {formatPrice(row.pricePence)}
-                        </span>
-                      </Td>
-                      <Td numeric>
-                        <span className="block pt-2">
-                          {formatPrice(row.paidPence)}
-                        </span>
+                        {formatPrice(row.paidPence)}
                         {editable ? (
                           <Button
                             type="button"
                             variant="link"
                             size="small"
-                            className="min-h-8 px-0"
+                            className="ml-2 min-h-8 px-0 align-baseline"
                             onClick={() => setPaying(row)}
                           >
-                            Add payment
-                            <span className="sr-only"> for {row.fullName}</span>
+                            Add
+                            <span className="sr-only">
+                              {" "}
+                              payment for {row.fullName}
+                            </span>
                           </Button>
                         ) : null}
                       </Td>
@@ -562,9 +538,23 @@ export function PeopleGrid({
                     </>
                   ) : null}
                   <Td>
+                    {text(
+                      "dietaryHealth",
+                      "Dietary and health",
+                      row.dietaryHealth,
+                      "w-56",
+                    )}
+                  </Td>
+                  <Td>
                     {text("phone", "Mobile", row.phone, "w-40", {
                       type: "tel",
                       inputMode: "tel",
+                    })}
+                  </Td>
+                  <Td>
+                    {text("email", "Email", row.email, "w-64", {
+                      type: "email",
+                      inputMode: "email",
                     })}
                   </Td>
                   <Td>
@@ -587,7 +577,7 @@ export function PeopleGrid({
                         )}
                       </Td>
                       <Td>
-                        <span className="block w-32 pt-2">
+                        <span className="block w-32 px-1 whitespace-nowrap">
                           {row.lastEmail
                             ? `${TEMPLATE_SHORT[row.lastEmail.template] ?? row.lastEmail.template}${row.lastEmail.sentOn ? ` ${formatUkDate(row.lastEmail.sentOn)}` : ""}`
                             : "None yet"}
@@ -595,12 +585,34 @@ export function PeopleGrid({
                       </Td>
                     </>
                   ) : null}
+                  <Td>
+                    {editable ? (
+                      <input
+                        type="checkbox"
+                        aria-label={`${row.fullName} is on the team`}
+                        checked={row.isTeam}
+                        onChange={(event) =>
+                          void save(
+                            row,
+                            "isTeam",
+                            "Team",
+                            String(event.currentTarget.checked),
+                          )
+                        }
+                        className="mx-2 size-6 align-middle accent-coral-deep"
+                      />
+                    ) : row.isTeam ? (
+                      "Yes"
+                    ) : (
+                      ""
+                    )}
+                  </Td>
                 </tr>
               );
             })}
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={14} className="px-4 py-6">
+                <td colSpan={16} className="px-4 py-6">
                   {rows.length === 0
                     ? "Nobody is booked yet. Add someone below, or import the spreadsheet."
                     : "Nobody matches. Try a different search, or untick the filters."}
@@ -679,7 +691,7 @@ function Td({ children, numeric }: { children: ReactNode; numeric?: boolean }) {
   return (
     <td
       className={cn(
-        "px-1 py-2",
+        "px-1 py-1",
         numeric && "px-2 text-right whitespace-nowrap",
       )}
     >
@@ -689,25 +701,14 @@ function Td({ children, numeric }: { children: ReactNode; numeric?: boolean }) {
 }
 
 function Balance({ money }: { money: BookingMoney }) {
-  if (money.state === "cancelled") return <span className="block pt-2">–</span>;
+  if (money.state === "cancelled") return <span>–</span>;
   if (money.balancePence < 0) {
-    return (
-      <span className="block pt-2">
-        Overpaid {formatPrice(-money.balancePence)}
-      </span>
-    );
-  }
-  if (money.balancePence === 0) {
-    return <span className="block pt-2">{formatPrice(0)}</span>;
+    return <span>Overpaid {formatPrice(-money.balancePence)}</span>;
   }
   return (
-    <span className="block pt-2">
-      <span className={cn(money.overdue && "font-bold text-danger")}>
-        {formatPrice(money.balancePence)}
-      </span>
-      {money.overdue ? (
-        <span className="block text-sm font-bold text-danger">Overdue</span>
-      ) : null}
+    <span className={cn(money.overdue && "font-bold text-danger")}>
+      {formatPrice(money.balancePence)}
+      {money.overdue ? <span className="ml-1 text-sm">Overdue</span> : null}
     </span>
   );
 }

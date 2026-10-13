@@ -74,7 +74,7 @@ async function EventDetails({
   const isPublic = event.status !== "draft";
 
   return (
-    <div className="mt-2 space-y-8">
+    <div className="mt-2 max-w-6xl space-y-8">
       <div>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-5xl">{event.title}</h1>

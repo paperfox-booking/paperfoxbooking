@@ -26,6 +26,7 @@ export interface EventProfit {
   endsAt: string;
   status: string;
   capacity: number;
+  balanceDueOn: string;
   profit: Profit;
   /** Places and income for each option, for the event's own page. */
   byOption: { optionId: string | null; count: number; salesPence: number }[];
@@ -33,7 +34,7 @@ export interface EventProfit {
 }
 
 const COLUMNS = `
-  id, title, starts_at, ends_at, status, capacity,
+  id, title, starts_at, ends_at, status, capacity, balance_due_on,
   bookings(price_pence, cancelled_at, ticket_type_id, payments(amount_pence, deleted_at)),
   event_costs(amount_pence, paid, category, deleted_at)
 `;
@@ -45,6 +46,7 @@ type EventSelect = {
   ends_at: string;
   status: string;
   capacity: number;
+  balance_due_on: string;
   bookings: {
     price_pence: number;
     cancelled_at: string | null;
@@ -84,6 +86,7 @@ function toEventProfit(event: EventSelect): EventProfit {
     endsAt: event.ends_at,
     status: event.status,
     capacity: event.capacity,
+    balanceDueOn: event.balance_due_on,
     profit: profitFor({
       capacity: event.capacity,
       bookings,

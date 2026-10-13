@@ -116,7 +116,7 @@ async function Booking({
   const cancelled = booking.cancelledAt !== null;
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-5xl space-y-8">
       <div>
         <p>
           <Link href={`/admin/events/${booking.event.id}/people`}>

@@ -81,7 +81,7 @@ async function Events({
 
 function EventList({ events }: { events: AdminEventSummary[] }) {
   return (
-    <ul className="mt-3 grid gap-4 md:grid-cols-2">
+    <ul className="mt-3 grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
       {events.map((event) => (
         <li key={event.id}>
           <Card className="h-full">

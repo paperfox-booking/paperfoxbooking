@@ -55,7 +55,7 @@ async function Person({
   const today = ukToday();
 
   return (
-    <div className="mt-2 space-y-8">
+    <div className="mt-2 max-w-5xl space-y-8">
       <div>
         <h1 className="text-5xl">{person.fullName}</h1>
         {person.isTeam ? (
