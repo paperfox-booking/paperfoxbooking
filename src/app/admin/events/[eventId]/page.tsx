@@ -321,6 +321,16 @@ function Details({ event }: { event: AdminEvent }) {
               {event.description || "None"}
             </span>
           </Row>
+          <Row label="Class kits (for the email)">
+            <span className="whitespace-pre-line">
+              {event.class_kits_info || "None yet"}
+            </span>
+          </Row>
+          <Row label="Joining details (for the email)">
+            <span className="whitespace-pre-line">
+              {event.joining_info || "None yet"}
+            </span>
+          </Row>
         </dl>
       </Card>
     </section>

@@ -294,9 +294,11 @@ Open the event and choose **Email people**:
 
 **Emails** in the menu lists B1, B2, B3, the thank you, the balance
 reminder, class kits (about 4 weeks before) and joining details (a few days
-before). The class kits and joining details emails have notes in [square
-brackets] to replace with each event's details before sending: the preview
-warns while any are left. Choose one to change its subject, wording and attachments; the
+before). What the class kits and joining details emails say about each
+event comes from that event's **Class kits** and **Joining details** boxes,
+under **Change details**: fill those in for each event, and the emails
+never need editing between events. Copying an event copies them as a
+starting point. Choose one to change its subject, wording and attachments; the
 preview beside it shows a real booking. Words in double curly brackets, like
 `{{first_name}}` or `{{balance_due_on}}`, fill in each person's details: the
 full list is under the wording box. The sign-off ("Regards, Nichola & Morag")

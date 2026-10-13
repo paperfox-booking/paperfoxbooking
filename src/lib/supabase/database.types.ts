@@ -430,6 +430,7 @@ export type Database = {
           booking_closes_at: string | null;
           booking_opens_at: string | null;
           capacity: number;
+          class_kits_info: string;
           copied_from_event_id: string | null;
           created_at: string;
           created_by: string | null;
@@ -441,6 +442,7 @@ export type Database = {
           hotel_info: string;
           id: string;
           included: string;
+          joining_info: string;
           slug: string;
           starts_at: string;
           status: Database["public"]["Enums"]["event_status"];
@@ -455,6 +457,7 @@ export type Database = {
           booking_closes_at?: string | null;
           booking_opens_at?: string | null;
           capacity: number;
+          class_kits_info?: string;
           copied_from_event_id?: string | null;
           created_at?: string;
           created_by?: string | null;
@@ -466,6 +469,7 @@ export type Database = {
           hotel_info?: string;
           id?: string;
           included?: string;
+          joining_info?: string;
           slug?: string;
           starts_at: string;
           status?: Database["public"]["Enums"]["event_status"];
@@ -479,6 +483,7 @@ export type Database = {
           booking_closes_at?: string | null;
           booking_opens_at?: string | null;
           capacity?: number;
+          class_kits_info?: string;
           copied_from_event_id?: string | null;
           created_at?: string;
           created_by?: string | null;
@@ -490,6 +495,7 @@ export type Database = {
           hotel_info?: string;
           id?: string;
           included?: string;
+          joining_info?: string;
           slug?: string;
           starts_at?: string;
           status?: Database["public"]["Enums"]["event_status"];

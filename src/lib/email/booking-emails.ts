@@ -135,7 +135,7 @@ export async function loadEmailEvent(
     .from("events")
     .select(
       `title, starts_at, ends_at, balance_due_on, deposit_hold_days,
-       facebook_group_url, included, hotel_info,
+       facebook_group_url, included, hotel_info, class_kits_info, joining_info,
        venues (name, address, postcode, phone, parking, access_info),
        ticket_types (name, description, price_pence, deposit_pence, on_sale, starts_at, sort_order, deleted_at)`,
     )
@@ -152,6 +152,8 @@ export async function loadEmailEvent(
     facebookGroupUrl: data.facebook_group_url,
     included: data.included,
     hotelInfo: data.hotel_info,
+    classKitsInfo: data.class_kits_info,
+    joiningInfo: data.joining_info,
     venueName: venue?.name ?? "",
     venueAddress: venue?.address ?? "",
     venuePostcode: venue?.postcode ?? "",

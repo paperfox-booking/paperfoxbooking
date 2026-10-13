@@ -26,6 +26,10 @@ const EMPTY_WARNINGS: Partial<Record<keyof PlaceholderValues, string>> = {
     "There's no payment to thank them for, so {{amount_received}} is empty.",
   received_on: "There's no payment date, so {{received_on}} is empty.",
   option: "This booking has no option, so {{option}} is empty.",
+  class_kits_info:
+    "This event's Class kits box is empty. Fill it in under the event's Change details.",
+  joining_info:
+    "This event's Joining details box is empty. Fill it in under the event's Change details.",
   prices: "No options are on sale, so {{prices}} is empty.",
 };
 

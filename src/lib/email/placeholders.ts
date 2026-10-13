@@ -48,6 +48,16 @@ export const PLACEHOLDERS = [
   },
   { name: "facebook_group", description: "The event's private Facebook group" },
   {
+    name: "class_kits_info",
+    description:
+      "The event's Class kits box: the kits, prices and how to order",
+  },
+  {
+    name: "joining_info",
+    description:
+      "The event's Joining details box: arrival, timetable and so on",
+  },
+  {
     name: "sign_off",
     description: "Who the email is from, for example Nichola & Morag",
   },

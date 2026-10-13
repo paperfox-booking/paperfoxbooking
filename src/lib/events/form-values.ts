@@ -15,6 +15,8 @@ export function newEventFormValues(
     description: "",
     included: STANDARD_EVENT.included,
     hotelInfo: "",
+    classKitsInfo: "",
+    joiningInfo: "",
     facebookGroupUrl: "",
     venueId,
     startDate: "",
@@ -37,6 +39,8 @@ export function eventFormValues(event: {
   description: string;
   included: string;
   hotel_info: string;
+  class_kits_info: string;
+  joining_info: string;
   facebook_group_url: string | null;
   venue_id: string;
   starts_at: string;
@@ -53,6 +57,8 @@ export function eventFormValues(event: {
     description: event.description,
     included: event.included,
     hotelInfo: event.hotel_info,
+    classKitsInfo: event.class_kits_info,
+    joiningInfo: event.joining_info,
     facebookGroupUrl: event.facebook_group_url ?? "",
     venueId: event.venue_id,
     startDate: toUkDateInput(event.starts_at),

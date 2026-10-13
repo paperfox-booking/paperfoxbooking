@@ -55,6 +55,8 @@ const event: EmailEvent = {
   depositHoldDays: 7,
   facebookGroupUrl: "https://www.facebook.com/groups/march2027",
   venueName: "Holiday Inn Coventry",
+  classKitsInfo: "",
+  joiningInfo: " Arrive from 3pm \n",
   options: [
     {
       name: "Weekend (4pm start)",
@@ -224,6 +226,8 @@ describe("values for a booking", () => {
       amount_received: "£60",
       received_on: "Thursday 2 April 2026",
       facebook_group: "https://www.facebook.com/groups/march2027",
+      joining_info: "Arrive from 3pm",
+      class_kits_info: "",
       sign_off: "Nichola & Morag",
     });
   });

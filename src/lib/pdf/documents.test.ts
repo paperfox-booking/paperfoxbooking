@@ -43,6 +43,8 @@ const data: DocumentData = {
     depositHoldDays: 7,
     facebookGroupUrl: "https://www.facebook.com/groups/march2027",
     venueName: "Holiday Inn Coventry",
+    classKitsInfo: "",
+    joiningInfo: "",
     venueAddress: "Hinckley Road\nCoventry",
     venuePostcode: "CV2 2HP",
     venuePhone: "024 7509 7600",

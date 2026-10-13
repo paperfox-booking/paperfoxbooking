@@ -231,4 +231,27 @@ test.describe("emails @supabase", () => {
       await waitForEmail(emailOf(name), /your balance is due by/, started);
     }
   });
+
+  test("the joining details email fills in the event's own details", async ({
+    page,
+  }, testInfo) => {
+    const { eventId } = await eventWithPeople();
+    await sql("update public.events set joining_info = $2 where id = $1", [
+      eventId,
+      "Doors open at 3pm.\n\n- Bring your own lamp",
+    ]);
+    await signInAsTeam(
+      page,
+      testInfo.project.name,
+      "admin",
+      `/admin/events/${eventId}/email`,
+    );
+    await page.getByLabel("Email", { exact: true }).selectOption("joining");
+    await page.getByRole("button", { name: "Preview the email" }).click();
+    const preview = page.frameLocator("iframe");
+    await expect(preview.getByText("Doors open at 3pm.")).toBeVisible();
+    await expect(
+      preview.getByRole("listitem").filter({ hasText: "Bring your own lamp" }),
+    ).toBeVisible();
+  });
 });

@@ -44,6 +44,9 @@ export interface EmailEvent {
   facebookGroupUrl: string | null;
   venueName: string;
   options: EmailOption[];
+  /** The event's own text for the class kits and joining details emails. */
+  classKitsInfo: string;
+  joiningInfo: string;
 }
 
 export interface EmailBooking {
@@ -159,6 +162,8 @@ export function placeholderValues({
     received_on: payment?.receivedOn ? longDate(payment.receivedOn) : "",
     bank_details: bankDetails(settings, booking.reference),
     facebook_group: event.facebookGroupUrl ?? "",
+    class_kits_info: event.classKitsInfo.trim(),
+    joining_info: event.joiningInfo.trim(),
     sign_off: settings.signOff,
   };
 }
