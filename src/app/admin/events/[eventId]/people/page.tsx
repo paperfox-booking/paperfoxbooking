@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { NotAllowed } from "@/components/admin/not-allowed";
+import { PageNotice } from "@/components/admin/page-notice";
 import { Button } from "@/components/ui/button";
 import { can } from "@/lib/auth/permissions";
 import { requireStaff } from "@/lib/auth/session";
@@ -23,14 +24,18 @@ export default function PeoplePage(
 ) {
   return (
     <Suspense fallback={<p>Loading everyone booked…</p>}>
-      <People params={props.params} />
+      <People params={props.params} searchParams={props.searchParams} />
     </Suspense>
   );
 }
 
 async function People({
   params,
-}: Pick<PageProps<"/admin/events/[eventId]/people">, "params">) {
+  searchParams,
+}: Pick<
+  PageProps<"/admin/events/[eventId]/people">,
+  "params" | "searchParams"
+>) {
   const { eventId } = await params;
   const access = await requireStaff(
     `/admin/events/${eventId}/people`,
@@ -42,11 +47,12 @@ async function People({
   const role = access.user.staffRole;
   const canEdit = can(role, "bookings.manage");
   const canSeeMoney = can(role, "payments.view");
-  const [event, rows, rooms, knownPeople] = await Promise.all([
+  const [event, rows, rooms, knownPeople, query] = await Promise.all([
     getEvent(eventId),
     listEventPeople(eventId),
     listRooms(eventId),
     canEdit ? listKnownPeople() : Promise.resolve([]),
+    searchParams,
   ]);
   if (!event) notFound();
 
@@ -63,6 +69,14 @@ async function People({
             ? ` Balance due by ${formatUkLongDate(event.balance_due_on)}.`
             : null}
         </p>
+        <PageNotice
+          notice={query.notice}
+          messages={{
+            imported: {
+              text: `Imported ${typeof query.count === "string" ? query.count : ""} people. Check the rows the preview flagged, then you're ready to go.`,
+            },
+          }}
+        />
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -74,6 +88,13 @@ async function People({
         {canEdit ? (
           <Button asChild variant="secondary">
             <Link href={`/admin/events/${event.id}/rooms`}>Rooms</Link>
+          </Button>
+        ) : null}
+        {canEdit && rows.every((row) => row.cancelled) ? (
+          <Button asChild variant="secondary">
+            <Link href={`/admin/events/${event.id}/import`}>
+              Import a spreadsheet
+            </Link>
           </Button>
         ) : null}
       </div>
