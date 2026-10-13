@@ -850,11 +850,90 @@ export type Database = {
         };
         Relationships: [];
       };
+      waitlist: {
+        Row: {
+          booking_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          customer_id: string;
+          event_id: string;
+          id: string;
+          notes: string;
+          offer_expires_on: string | null;
+          offered_at: string | null;
+          status: Database["public"]["Enums"]["waitlist_status"];
+          ticket_type_id: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          booking_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id: string;
+          event_id: string;
+          id?: string;
+          notes?: string;
+          offer_expires_on?: string | null;
+          offered_at?: string | null;
+          status?: Database["public"]["Enums"]["waitlist_status"];
+          ticket_type_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          booking_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id?: string;
+          event_id?: string;
+          id?: string;
+          notes?: string;
+          offer_expires_on?: string | null;
+          offered_at?: string | null;
+          status?: Database["public"]["Enums"]["waitlist_status"];
+          ticket_type_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "waitlist_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "waitlist_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "waitlist_option_same_event";
+            columns: ["ticket_type_id", "event_id"];
+            isOneToOne: false;
+            referencedRelation: "ticket_types";
+            referencedColumns: ["id", "event_id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      book_from_waitlist: {
+        Args: { option_id: string; room_id?: string; waitlist_id: string };
+        Returns: string;
+      };
       copy_event: {
         Args: {
           new_starts_on: string;
@@ -891,6 +970,8 @@ export type Database = {
         "draft" | "published" | "sold_out" | "cancelled" | "finished";
       payment_method: "bank_transfer" | "cash" | "card" | "other";
       staff_role: "owner" | "admin" | "door";
+      waitlist_status:
+        "waiting" | "offered" | "booked" | "declined" | "removed";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1021,6 +1102,7 @@ export const Constants = {
       event_status: ["draft", "published", "sold_out", "cancelled", "finished"],
       payment_method: ["bank_transfer", "cash", "card", "other"],
       staff_role: ["owner", "admin", "door"],
+      waitlist_status: ["waiting", "offered", "booked", "declined", "removed"],
     },
   },
 } as const;

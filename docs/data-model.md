@@ -315,6 +315,17 @@ erDiagram
 
 `tests/db/settings-and-emails.test.ts` proves these rules.
 
+## The waiting list
+
+- **`waitlist`**: event, customer, the option they'd like, notes, status
+  (`waiting`, `offered`, `booked`, `declined`, `removed`), when a place was
+  offered and the last day to accept, and the booking once they're booked.
+- Someone can only be waiting (or offered a place) once per event.
+- **`public.book_from_waitlist(waitlist_id, option_id, room_id)`** makes the
+  booking at the option's price and marks them booked, together. The
+  booking's own checks still apply, so a full event refuses it.
+- Owners and admins only. `tests/db/waiting-list.test.ts` proves these rules.
+
 ## Helper functions
 
 These live in the `private` schema, which the API doesn't expose:

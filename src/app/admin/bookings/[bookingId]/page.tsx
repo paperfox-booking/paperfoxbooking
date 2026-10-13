@@ -61,6 +61,9 @@ const NOTICES = {
   },
   "email-recorded": { text: "Email recorded." },
   "email-sent": { text: "Email sent." },
+  "booked-from-waitlist": {
+    text: "Booked in from the waiting list. Send them B1 below, with how to pay.",
+  },
   "price-changed": { text: "Price changed." },
   cancelled: { text: "The booking has been cancelled and the place freed up." },
   reinstated: { text: "The booking has been reinstated." },

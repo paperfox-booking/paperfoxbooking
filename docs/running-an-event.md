@@ -187,6 +187,23 @@ Open an event and choose **Profit and loss**:
 year or all of them, and downloads as a CSV for your accountant. Copying an
 event copies its costs too, as unpaid estimates to update.
 
+## The waiting list
+
+When an event is full, open it and choose **Waiting list**:
+
+1. **Add someone** with their name, and their email or mobile. People are
+   listed in the order they joined.
+2. When a place comes up (someone cancels), choose **Offer a place** on the
+   first person, with how many days they have to accept (3 unless you
+   change it). Let them know by phone or email. If the time runs out, the
+   list says so: offer it to the next person, or give them longer.
+3. When they accept, choose **Book them in**, with their option (and room,
+   if you know it). Their booking opens, ready to send them B1 with how to
+   pay. A full event refuses this, so cancel the booking whose place they're
+   taking first.
+4. **They said no** or **Remove** takes someone off the list. They're kept
+   under "No longer waiting".
+
 ## The catering sheet for the hotel
 
 Open the event and choose **Printing and catering**, then **Catering
