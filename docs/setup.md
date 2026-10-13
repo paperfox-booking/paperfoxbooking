@@ -113,11 +113,11 @@ sign in differently, with an emailed code, once Resend is set up.
 Do this once the database has been set up (see `docs/deploy.md`).
 
 1. **Password length:** in Supabase, go to **Authentication → Sign In /
-   Providers → Email** and set **Minimum password length** to `12`.
+   Providers → Email** and set **Minimum password length** to `8`.
 2. **Create each account:** go to **Authentication → Users → Add user →
    Create new user**:
    - Email address: their own email address;
-   - Password: a temporary one, at least 12 characters (a few words strung
+   - Password: a temporary one, at least 8 characters (a few words strung
      together works well);
    - tick **Auto Confirm User**, then click **Create user**.
 3. **Make them owners:** go to **SQL Editor** and run this, with the real

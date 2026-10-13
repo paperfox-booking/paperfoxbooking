@@ -202,7 +202,7 @@ test.describe("team sign-in with a password @supabase", () => {
     await page.getByLabel("New password").fill("short");
     await page.getByLabel("Type it again").fill("short");
     await page.getByRole("button", { name: "Change password" }).click();
-    await expect(page.getByText(/at least 12 characters/).last()).toBeVisible();
+    await expect(page.getByText(/at least 8 characters/).last()).toBeVisible();
 
     await page.getByLabel("New password").fill("long enough password one");
     await page.getByLabel("Type it again").fill("long enough password two");
