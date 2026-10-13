@@ -12,11 +12,13 @@ import { cn } from "@/lib/utils";
 /**
  * Labelled fields for the team's forms. Each one is wired up for screen
  * readers (hint and error linked to the input) and keeps what was typed when
- * the form comes back with a problem. The input's id and name are the same.
+ * the form comes back with a problem. The input's id is its name, unless an
+ * id is given (needed when a page has several forms with the same fields).
  */
 
 interface FieldProps {
   name: string;
+  id?: string;
   label: ReactNode;
   hint?: ReactNode;
   error?: string;
@@ -31,6 +33,7 @@ function a11y(name: string, hint: unknown, error: unknown) {
 }
 
 export function TextField({
+  id,
   name,
   label,
   hint,
@@ -38,15 +41,15 @@ export function TextField({
   defaultValue,
   className,
   ...props
-}: FieldProps & Omit<ComponentProps<"input">, "name" | "defaultValue">) {
+}: FieldProps & Omit<ComponentProps<"input">, "name" | "defaultValue" | "id">) {
   return (
-    <Field id={name} label={label} hint={hint} error={error}>
+    <Field id={id ?? name} label={label} hint={hint} error={error}>
       <Input
-        id={name}
+        id={id ?? name}
         name={name}
         defaultValue={defaultValue}
         className={className}
-        {...a11y(name, hint, error)}
+        {...a11y(id ?? name, hint, error)}
         {...props}
       />
     </Field>
@@ -54,27 +57,7 @@ export function TextField({
 }
 
 export function TextareaField({
-  name,
-  label,
-  hint,
-  error,
-  defaultValue,
-  ...props
-}: FieldProps & Omit<ComponentProps<"textarea">, "name" | "defaultValue">) {
-  return (
-    <Field id={name} label={label} hint={hint} error={error}>
-      <Textarea
-        id={name}
-        name={name}
-        defaultValue={defaultValue}
-        {...a11y(name, hint, error)}
-        {...props}
-      />
-    </Field>
-  );
-}
-
-export function MoneyField({
+  id,
   name,
   label,
   hint,
@@ -82,14 +65,37 @@ export function MoneyField({
   defaultValue,
   ...props
 }: FieldProps &
-  Omit<ComponentProps<"input">, "name" | "defaultValue" | "type">) {
+  Omit<ComponentProps<"textarea">, "name" | "defaultValue" | "id">) {
   return (
-    <Field id={name} label={label} hint={hint} error={error}>
-      <MoneyInput
-        id={name}
+    <Field id={id ?? name} label={label} hint={hint} error={error}>
+      <Textarea
+        id={id ?? name}
         name={name}
         defaultValue={defaultValue}
-        {...a11y(name, hint, error)}
+        {...a11y(id ?? name, hint, error)}
+        {...props}
+      />
+    </Field>
+  );
+}
+
+export function MoneyField({
+  id,
+  name,
+  label,
+  hint,
+  error,
+  defaultValue,
+  ...props
+}: FieldProps &
+  Omit<ComponentProps<"input">, "name" | "defaultValue" | "type" | "id">) {
+  return (
+    <Field id={id ?? name} label={label} hint={hint} error={error}>
+      <MoneyInput
+        id={id ?? name}
+        name={name}
+        defaultValue={defaultValue}
+        {...a11y(id ?? name, hint, error)}
         {...props}
       />
     </Field>
@@ -97,6 +103,7 @@ export function MoneyField({
 }
 
 export function SelectField({
+  id,
   name,
   label,
   hint,
@@ -104,14 +111,15 @@ export function SelectField({
   defaultValue,
   children,
   ...props
-}: FieldProps & Omit<ComponentProps<"select">, "name" | "defaultValue">) {
+}: FieldProps &
+  Omit<ComponentProps<"select">, "name" | "defaultValue" | "id">) {
   return (
-    <Field id={name} label={label} hint={hint} error={error}>
+    <Field id={id ?? name} label={label} hint={hint} error={error}>
       <Select
-        id={name}
+        id={id ?? name}
         name={name}
         defaultValue={defaultValue}
-        {...a11y(name, hint, error)}
+        {...a11y(id ?? name, hint, error)}
         {...props}
       >
         {children}
@@ -129,8 +137,10 @@ export function DateTimeFields({
 }: {
   legend: ReactNode;
   hint?: ReactNode;
-  date: FieldProps & Omit<ComponentProps<"input">, "name" | "defaultValue">;
-  time: FieldProps & Omit<ComponentProps<"input">, "name" | "defaultValue">;
+  date: FieldProps &
+    Omit<ComponentProps<"input">, "name" | "defaultValue" | "id">;
+  time: FieldProps &
+    Omit<ComponentProps<"input">, "name" | "defaultValue" | "id">;
 }) {
   return (
     <fieldset className="space-y-3">

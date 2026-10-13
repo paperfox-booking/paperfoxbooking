@@ -9,6 +9,351 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string;
+          changed_at: string;
+          changed_by: string | null;
+          id: number;
+          new_values: Json | null;
+          old_values: Json | null;
+          record_id: string;
+          table_name: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          action: string;
+          changed_at?: string;
+          changed_by?: string | null;
+          id?: never;
+          new_values?: Json | null;
+          old_values?: Json | null;
+          record_id: string;
+          table_name: string;
+        };
+        Update: {
+          action?: string;
+          changed_at?: string;
+          changed_by?: string | null;
+          id?: never;
+          new_values?: Json | null;
+          old_values?: Json | null;
+          record_id?: string;
+          table_name?: string;
+        };
+        Relationships: [];
+      };
+      bookings: {
+        Row: {
+          cancel_reason: string;
+          cancelled_at: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          customer_id: string;
+          deposit_pence: number | null;
+          event_id: string;
+          id: string;
+          notes: string;
+          payment_notes: string;
+          price_note: string;
+          price_pence: number;
+          reference: string;
+          room_id: string | null;
+          source: string;
+          ticket_type_id: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          cancel_reason?: string;
+          cancelled_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          customer_id: string;
+          deposit_pence?: number | null;
+          event_id: string;
+          id?: string;
+          notes?: string;
+          payment_notes?: string;
+          price_note?: string;
+          price_pence: number;
+          reference?: string;
+          room_id?: string | null;
+          source?: string;
+          ticket_type_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          cancel_reason?: string;
+          cancelled_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          customer_id?: string;
+          deposit_pence?: number | null;
+          event_id?: string;
+          id?: string;
+          notes?: string;
+          payment_notes?: string;
+          price_note?: string;
+          price_pence?: number;
+          reference?: string;
+          room_id?: string | null;
+          source?: string;
+          ticket_type_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bookings_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookings_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookings_option_same_event";
+            columns: ["ticket_type_id", "event_id"];
+            isOneToOne: false;
+            referencedRelation: "ticket_types";
+            referencedColumns: ["id", "event_id"];
+          },
+          {
+            foreignKeyName: "bookings_room_same_event";
+            columns: ["room_id", "event_id"];
+            isOneToOne: false;
+            referencedRelation: "event_rooms";
+            referencedColumns: ["id", "event_id"];
+          },
+        ];
+      };
+      customers: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          dietary_health: string;
+          email: string | null;
+          emergency_contact: string;
+          full_name: string;
+          id: string;
+          is_team: boolean;
+          notes: string;
+          phone: string;
+          updated_at: string;
+          user_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          dietary_health?: string;
+          email?: string | null;
+          emergency_contact?: string;
+          full_name: string;
+          id?: string;
+          is_team?: boolean;
+          notes?: string;
+          phone?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          dietary_health?: string;
+          email?: string | null;
+          emergency_contact?: string;
+          full_name?: string;
+          id?: string;
+          is_team?: boolean;
+          notes?: string;
+          phone?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Relationships: [];
+      };
+      email_log: {
+        Row: {
+          booking_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          customer_id: string | null;
+          id: string;
+          note: string;
+          outside_system: boolean;
+          sent_at: string | null;
+          sent_on: string | null;
+          status: string;
+          subject: string;
+          template: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          booking_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id?: string | null;
+          id?: string;
+          note?: string;
+          outside_system?: boolean;
+          sent_at?: string | null;
+          sent_on?: string | null;
+          status?: string;
+          subject?: string;
+          template: string;
+        };
+        Update: {
+          booking_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id?: string | null;
+          id?: string;
+          note?: string;
+          outside_system?: boolean;
+          sent_at?: string | null;
+          sent_on?: string | null;
+          status?: string;
+          subject?: string;
+          template?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "email_log_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "email_log_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      event_costs: {
+        Row: {
+          amount_pence: number;
+          category: string;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          description: string;
+          event_id: string;
+          id: string;
+          notes: string;
+          paid: boolean;
+          sort_order: number;
+          supplier: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          amount_pence: number;
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          description?: string;
+          event_id: string;
+          id?: string;
+          notes?: string;
+          paid?: boolean;
+          sort_order?: number;
+          supplier?: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount_pence?: number;
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          description?: string;
+          event_id?: string;
+          id?: string;
+          notes?: string;
+          paid?: boolean;
+          sort_order?: number;
+          supplier?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_costs_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      event_rooms: {
+        Row: {
+          capacity: number | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          event_id: string;
+          id: string;
+          name: string;
+          notes: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          capacity?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          event_id: string;
+          id?: string;
+          name: string;
+          notes?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          capacity?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          event_id?: string;
+          id?: string;
+          name?: string;
+          notes?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_rooms_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       events: {
         Row: {
           balance_due_on: string;
@@ -96,6 +441,60 @@ export type Database = {
             columns: ["venue_id"];
             isOneToOne: false;
             referencedRelation: "venues";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      payments: {
+        Row: {
+          amount_pence: number;
+          booking_id: string;
+          created_at: string;
+          currency: string;
+          delete_reason: string;
+          deleted_at: string | null;
+          id: string;
+          method: Database["public"]["Enums"]["payment_method"];
+          note: string;
+          received_on: string | null;
+          recorded_by: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          amount_pence: number;
+          booking_id: string;
+          created_at?: string;
+          currency?: string;
+          delete_reason?: string;
+          deleted_at?: string | null;
+          id?: string;
+          method?: Database["public"]["Enums"]["payment_method"];
+          note?: string;
+          received_on?: string | null;
+          recorded_by?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          amount_pence?: number;
+          booking_id?: string;
+          created_at?: string;
+          currency?: string;
+          delete_reason?: string;
+          deleted_at?: string | null;
+          id?: string;
+          method?: Database["public"]["Enums"]["payment_method"];
+          note?: string;
+          received_on?: string | null;
+          recorded_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
             referencedColumns: ["id"];
           },
         ];
@@ -284,10 +683,15 @@ export type Database = {
         };
         Returns: string;
       };
+      import_bookings: {
+        Args: { people: Json; rooms: Json; target_event_id: string };
+        Returns: number;
+      };
     };
     Enums: {
       event_status:
         "draft" | "published" | "sold_out" | "cancelled" | "finished";
+      payment_method: "bank_transfer" | "cash" | "card" | "other";
       staff_role: "owner" | "admin" | "door";
     };
     CompositeTypes: {
@@ -417,6 +821,7 @@ export const Constants = {
   public: {
     Enums: {
       event_status: ["draft", "published", "sold_out", "cancelled", "finished"],
+      payment_method: ["bank_transfer", "cash", "card", "other"],
       staff_role: ["owner", "admin", "door"],
     },
   },

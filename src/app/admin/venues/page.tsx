@@ -45,7 +45,7 @@ async function Venues({
           <p className="mt-1">Add one before adding an event.</p>
         </Card>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
+        <ul className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {venues.map((venue) => (
             <li key={venue.id}>
               <Card className="h-full">

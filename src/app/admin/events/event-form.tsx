@@ -70,7 +70,7 @@ export function EventForm({
   }
 
   return (
-    <form action={formAction} className="mt-6 space-y-6" noValidate>
+    <form action={formAction} className="mt-6 max-w-4xl space-y-6" noValidate>
       {state.error ? <Notice tone="error">{state.error}</Notice> : null}
       {Object.keys(errors).length ? (
         <Notice tone="error">

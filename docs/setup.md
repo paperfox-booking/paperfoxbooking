@@ -192,6 +192,10 @@ pnpm dev                # the site is now at http://localhost:3000
 Sign-in emails aren't really sent locally. Open the test mailbox at
 <http://127.0.0.1:54324> to see the code.
 
+To try things out with made-up events, people and bookings, run
+`pnpm seed` (or `pnpm seed --reset` to start again). It only ever works on
+the database on your own computer.
+
 ## 5. Checks
 
 | Command                       | What it checks                                                                                                |

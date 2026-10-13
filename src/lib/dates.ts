@@ -139,3 +139,8 @@ export function formatUkFriendlyTime(value: DateInput): string {
     minutes === "00" ? "haaa" : "h:mmaaa",
   );
 }
+
+/** Today's date in the UK, "2026-10-14". */
+export function ukToday(): string {
+  return toUkDateInput(new Date());
+}

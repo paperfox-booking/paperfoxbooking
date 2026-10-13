@@ -138,6 +138,44 @@ export class TestTransaction {
     return rows[0]!.id;
   }
 
+  /** Adds a person to the customers list, bypassing RLS (setup only). */
+  async createCustomer(
+    name = "Test customer",
+    email: string | null = `${randomUUID().slice(0, 8)}@example.test`,
+    userId: string | null = null,
+  ): Promise<string> {
+    const { rows } = await this.client.query<{ id: string }>(
+      `insert into public.customers (full_name, email, user_id, dietary_health)
+       values ($1, $2, $3, 'Gluten free') returning id`,
+      [name, email, userId],
+    );
+    return rows[0]!.id;
+  }
+
+  /** Books a person onto an event, bypassing RLS (setup only). */
+  async createBooking(
+    eventId: string,
+    customerId: string,
+    { pricePence = 19500, depositPence = 6000 as number | null } = {},
+  ): Promise<{ id: string; reference: string }> {
+    const { rows } = await this.client.query<{ id: string; reference: string }>(
+      `insert into public.bookings (event_id, customer_id, price_pence, deposit_pence)
+       values ($1, $2, $3, $4) returning id, reference`,
+      [eventId, customerId, pricePence, depositPence],
+    );
+    return rows[0]!;
+  }
+
+  /** Records money received, bypassing RLS (setup only). */
+  async createPayment(bookingId: string, amountPence: number): Promise<string> {
+    const { rows } = await this.client.query<{ id: string }>(
+      `insert into public.payments (booking_id, amount_pence, received_on)
+       values ($1, $2, '2026-10-01') returning id`,
+      [bookingId, amountPence],
+    );
+    return rows[0]!.id;
+  }
+
   /** Acts as a signed-in person until `asSuperuser()` is called. */
   async as(user: TestUser): Promise<void> {
     await this.client.query("reset role");

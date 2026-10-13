@@ -17,7 +17,7 @@ import {
   formatUkLongDate,
   toUkDateInput,
 } from "@/lib/dates";
-import { getEvent, type AdminEvent } from "@/lib/events/admin";
+import { countBooked, getEvent, type AdminEvent } from "@/lib/events/admin";
 import { balanceAfterDeposit, describeTimeBefore } from "@/lib/events/rules";
 import { formatPrice } from "@/lib/money";
 import { isUuid } from "@/lib/validation/ids";
@@ -64,8 +64,9 @@ async function EventDetails({
   if (!access.allowed) return <NotAllowed access={access} />;
   if (!isUuid(eventId)) notFound();
 
-  const [event, { notice }] = await Promise.all([
+  const [event, booked, { notice }] = await Promise.all([
     getEvent(eventId),
+    countBooked(eventId),
     searchParams,
   ]);
   if (!event) notFound();
@@ -73,7 +74,7 @@ async function EventDetails({
   const isPublic = event.status !== "draft";
 
   return (
-    <div className="mt-2 space-y-8">
+    <div className="mt-2 max-w-6xl space-y-8">
       <div>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-5xl">{event.title}</h1>
@@ -87,8 +88,18 @@ async function EventDetails({
       </div>
 
       <div className="flex flex-wrap gap-3">
+        <Button asChild>
+          <Link href={`/admin/events/${event.id}/people`}>
+            People booked ({booked} of {event.capacity})
+          </Link>
+        </Button>
         {canManage ? (
           <>
+            <Button asChild variant="secondary">
+              <Link href={`/admin/events/${event.id}/costs`}>
+                Profit and loss
+              </Link>
+            </Button>
             <Button asChild variant="secondary">
               <Link href={`/admin/events/${event.id}/edit`}>
                 Change details
