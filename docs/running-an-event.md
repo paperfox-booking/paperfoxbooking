@@ -76,7 +76,97 @@ Go to **Venues** to change the Holiday Inn's details (address, phone, map
 link, parking and access) or add another venue. These show on each event's
 page.
 
+## Bringing in a booking spreadsheet
+
+For an event that already has bookings on a spreadsheet, like March 2027:
+
+1. Make sure the event exists, with its options (the 4pm and 9am starts).
+2. Open the event, choose **People booked**, then **Import a spreadsheet**.
+3. Choose the Excel file (.xlsx) and **Check the spreadsheet**. Nothing is
+   saved yet. The preview shows:
+   - how many people, totals due, received and still owed, and the rooms;
+   - anything about the whole sheet, such as totals that don't add up;
+   - **rows to check**, such as a 9am person charged the 4pm price, a row
+     with no balance formula, or two names in one row;
+   - rows that weren't imported (for example the waiting list below the
+     totals).
+4. Choose **Import**. Everyone is saved together, or nobody is.
+
+The rows marked "AA" are put on the team and listed first. What each person
+has paid so far is brought across as one payment, and the last email in
+"Booking Sent" goes into their emails. Imports only work on an event with
+nobody booked yet, so nobody can be added twice.
+
+## The people booked list
+
+Open an event and choose **People booked**. It works like the spreadsheet:
+
+- **Type into any box** to change it. It saves when you move on. Enter and
+  the up and down arrows move between rows, and Escape undoes what you
+  typed.
+- **Recording bank transfers:** type the amount in **Pay today** and press
+  Enter. It's recorded as a bank transfer received today, and the cursor
+  moves to the next person, so you can work down your bank statement. The
+  grey number in the box is what's needed next (the rest of the deposit, or
+  the balance).
+- **Cash, another date or a note:** choose **Add** next to what they've
+  received.
+- **Find someone** searches names, emails, references and notes. Tick **Only
+  people who owe money** or **Only overdue** to see who to chase.
+- The boxes at the top show places, options, rooms (against each room's
+  limit) and money: total due, received, still owed and overdue.
+- **Add someone** at the bottom. Start typing a name to pick someone who's
+  been before.
+- **Download as a spreadsheet (CSV)** gives you the list for printing or
+  Excel.
+
+Door staff see who's booked and their details, but not money.
+
+## A booking's own page
+
+Choose someone's reference (like PF-2027-0001) to open their booking. It
+shows what they owe and have paid, and:
+
+- **Payments:** every payment, who recorded it, and **Remove** for one
+  recorded by mistake (with a reason; it stays in the history);
+- **Record a payment** with the amount, date, how it was paid and a note;
+- **Emails sent:** including ones from the spreadsheet, and **Record an
+  email sent outside the system**;
+- **Change the price,** with a reason (for example a discount);
+- **Cancel this booking** (with a reason), which frees up the place, or
+  **Reinstate** it;
+- **History:** every change, when and by whom.
+
+## Everyone on file
+
+**People** in the menu lists everyone who's booked, kept from one event to
+the next. It's a spreadsheet too: type into it to update details for lots of
+people at once. Choose **Profile** for someone's details and all their
+bookings.
+
+## Rooms
+
+On **People booked**, choose **Rooms** to add rooms or change their names
+and places. A room's places are a guide: the event's own places are the
+limit. Set each person's room on the people booked list.
+
+## Profit and loss
+
+Open an event and choose **Profit and loss**:
+
+- **Income** is what everyone booked owes in total (by option), plus money
+  kept from cancelled bookings;
+- **Costs** go in the spreadsheet at the bottom: room hire, food, goody bags
+  and so on. Tick **Paid** once a cost is paid;
+- **Profit** is income less costs, and **cash so far** is money received
+  less costs paid.
+
+**Reports** in the menu shows every event side by side, with totals, for one
+year or all of them, and downloads as a CSV for your accountant. Copying an
+event copies its costs too, as unpaid estimates to update.
+
 ## Coming next
 
-Bookings, payments, the March 2027 spreadsheet import, emails and chasing
-balances are being built next. This guide will cover them as they arrive.
+Sending the B1, B2 and B3 emails from the system (with balance reminders and
+chasers) comes next, once the Resend email set-up in `docs/setup.md` is
+done. After that: online booking with a deposit, and the waiting list.

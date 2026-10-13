@@ -144,6 +144,113 @@ event.
 
 `tests/db/events.test.ts` proves these rules.
 
+## People, bookings and money (Phase 2)
+
+```mermaid
+erDiagram
+  CUSTOMERS ||--o{ BOOKINGS : "books"
+  EVENTS ||--o{ BOOKINGS : "has"
+  TICKET_TYPES |o--o{ BOOKINGS : "chosen"
+  EVENT_ROOMS |o--o{ BOOKINGS : "seated in"
+  EVENTS ||--o{ EVENT_ROOMS : "has"
+  EVENTS ||--o{ EVENT_COSTS : "costs"
+  BOOKINGS ||--o{ PAYMENTS : "paid by"
+  BOOKINGS ||--o{ EMAIL_LOG : "emails"
+  AUTH_USERS |o--o| CUSTOMERS : "signs in as"
+
+  CUSTOMERS {
+    uuid id PK
+    uuid user_id FK "set when they sign in with the same email"
+    text full_name
+    text email "lower case, one person each"
+    text phone
+    text emergency_contact
+    text dietary_health "special category data"
+    text notes
+    boolean is_team "listed first, like AA rows"
+  }
+  BOOKINGS {
+    uuid id PK
+    text reference "PF-2027-0001, no gaps"
+    uuid event_id FK
+    uuid customer_id FK
+    uuid ticket_type_id FK "empty for a free team place"
+    uuid room_id FK
+    integer price_pence "kept even if the option's price changes"
+    integer deposit_pence
+    text price_note "why the price differs"
+    text notes
+    text payment_notes
+    text source "staff, import or online"
+    timestamptz cancelled_at
+    text cancel_reason
+  }
+  EVENT_ROOMS {
+    uuid id PK
+    uuid event_id FK
+    text name
+    integer capacity "a guide only"
+    text notes
+  }
+  PAYMENTS {
+    uuid id PK
+    uuid booking_id FK
+    integer amount_pence
+    payment_method method "bank_transfer, cash, card, other"
+    date received_on "empty only for imported totals"
+    text note
+    uuid recorded_by FK
+    timestamptz deleted_at "removed, with a reason"
+    text delete_reason
+  }
+  EMAIL_LOG {
+    uuid id PK
+    uuid booking_id FK
+    uuid customer_id FK
+    text template "B1, B2, B3, thanks, balance_reminder, other"
+    date sent_on
+    boolean outside_system
+    text status
+  }
+  EVENT_COSTS {
+    uuid id PK
+    uuid event_id FK
+    text category "venue, food, goody_bags and so on"
+    text description
+    text supplier
+    integer amount_pence
+    boolean paid
+  }
+```
+
+- **One booking is one person's place on one event.** What they've paid and
+  still owe is always worked out from their payments, never typed in.
+- **Booking references** come from one counter per year, inside the
+  booking's own transaction, so there are no gaps or duplicates.
+- **No overbooking.** Adding a booking (or reinstating one) locks the event
+  and checks its places, and the option's own limit if it has one. Two
+  people taking the last place at the same moment can't both succeed.
+- **Payments are never edited or deleted.** A mistake is removed with a
+  reason, and stays in the history.
+- **`public.import_bookings`** brings a checked spreadsheet into an event
+  with nobody booked yet, all at once or not at all. It reuses people
+  already on file (matched by email).
+- **`audit_log`** records every change to events, options, bookings,
+  payments and costs, with who made it. Nobody can change it.
+
+### Who can do what with people and money
+
+|                                                   | Customer | Door staff | Admin | Owner |
+| ------------------------------------------------- | -------- | ---------- | ----- | ----- |
+| Read their own record, bookings and payments      | ✓        |            |       |       |
+| Read everyone's records and bookings              |          | ✓          | ✓     | ✓     |
+| Add and change people, bookings and rooms         |          |            | ✓     | ✓     |
+| Read and record payments; read and record emails  |          |            | ✓     | ✓     |
+| Read and change costs; read the audit log         |          |            | ✓     | ✓     |
+| Edit or delete a payment, or change the audit log |          |            |       |       |
+
+`tests/db/bookings.test.ts` and `tests/db/costs.test.ts` prove these rules.
+
 ## Helper functions
 
 These live in the `private` schema, which the API doesn't expose:
@@ -159,8 +266,8 @@ can check the staff table without opening it up.
 
 Following CLAUDE.md section 6, with the changes agreed in section 15:
 
-| Phase | Tables                                                                                                                                                                        |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2     | `bookings` (with references like `PF-2027-0001`), `booking_items`, `attendees`, `payments` (bank transfer, cash, other), `email_log`, `audit_log`, and the spreadsheet import |
-| 3     | `waitlist`, holds and expiry, `scheduled_emails`                                                                                                                              |
-| 4     | `refunds`, credit, event costs (for profit reports)                                                                                                                           |
+| Phase | Tables                                                                               |
+| ----- | ------------------------------------------------------------------------------------ |
+| 2     | Sending the B1, B2 and B3 emails, balance reminders and chasers (`scheduled_emails`) |
+| 3     | `waitlist`, holds and expiry, `scheduled_emails`                                     |
+| 4     | `refunds` and credit                                                                 |

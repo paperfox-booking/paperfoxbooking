@@ -570,7 +570,14 @@ George asked for the spreadsheet to come into the system, built as soon as Phase
 - **Team rows first:** the rows marked "AA" (Nichola, Morag and their helpers) stay at the top, then everyone else alphabetically.
 - **Rooms with their own limits** (for example Main room 78, 2nd Room A, 2nd Room B and Welsh), as well as the event's overall limit.
 - **The import is done in the app:** staff upload the spreadsheet on an import page, check a preview with problems flagged, then confirm. The real data never goes into this repository.
-- **Working pace:** George asked to build quickly, so Claude carries on to the next phase without waiting for each pull request to be merged. George still reviews and merges each one.
+- **Working pace:** George asked to build quickly, so Claude carries on to the next phase without waiting for each pull request to be merged. George still reviews each one.
+- **Merging (13/10/2026):** George asked Claude to merge pull request 3 for him. Claude merges only a specific pull request George asks it to merge, once its checks have passed; otherwise George merges.
+
+### More from George (13/10/2026)
+
+- **A profit and loss report,** with each event's costs typed into a spreadsheet-style list. (Built: event costs, and Reports across events.)
+- **Spreadsheet views wherever there's a lot to update,** so the team can update many people at once instead of opening each profile. Recording payments must be as quick as possible. (Built: the Pay today box, and the People list as a spreadsheet.)
+- **It must work on a phone.**
 
 ### Build order (proposed 13/10/2026, replaces the order of phases 1 to 4 in section 14)
 
