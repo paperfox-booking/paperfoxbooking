@@ -347,6 +347,8 @@ At the end of each phase:
 
 _Being filled in as George answers the questions in section 13. Anything marked **to confirm** still needs an answer._
 
+**Where a decision George has made here conflicts with sections 1 to 14, this section wins.** Sections 1 to 14 will be brought into line once all the questions are answered.
+
 Sources so far:
 - George's answers in chat.
 - His March 2027 booking spreadsheet. It holds real customer data, so it is **not** in this repository and must never be added.
@@ -434,7 +436,14 @@ The email wording and the terms are kept in `docs/reference/`. The booking detai
 - **Balance:** due 6 weeks before the event, with a reminder before then. To confirm: the March 2027 booking details give 26/01/2027, which is 7 weeks and 3 days before. Is the due date set by hand for each event?
 - **Late bookings:** booking within 6 weeks of the event means paying in full straight away.
 - **Paying in parts:** this already happens. The spreadsheet shows payments of £65, £100, £120 and £125.
-- **Card payments:** to confirm. This is the brief's biggest open question, because sections 1, 3 and 7 assume Stripe card payments.
+- **Decided: bank transfer only, for now.** No card payments at launch. George said "at the moment", so cards may come later.
+  - **No Stripe for now.** Stripe Checkout, the Stripe webhooks, the Stripe environment variables and the Stripe tests are all left out until cards are wanted. This replaces the Stripe parts of sections 3, 4, 5, 7, 10, 11 and 14.
+  - **Ready for cards later.** Payments still record a method (`bank_transfer`, `cash`, `other`, and later `card`), so cards can be added without reworking anything.
+  - **Places are held for longer.** A booking waiting for its deposit holds its place for much longer than the brief's 15 minutes (how long is to confirm). The no-overbooking rule still applies.
+  - **Unique payment reference.** Each booking gets one (for example `PF-2027-0001`), and customers use it when they pay, so payments are easy to match on the bank statement.
+  - **Staff record payments.** Staff record each transfer in the system. That updates the balance and sends the right email (B2 when the deposit is paid, B3 when it's paid in full) automatically.
+  - **Refunds** are made by bank transfer outside the system, then recorded in it.
+  - **Idea, not agreed:** upload a bank statement (CSV) and let the system match payments to bookings by reference.
 
 ### 5. Cancellations and refunds (from the 2026 terms)
 
@@ -520,7 +529,7 @@ The email wording and the terms are kept in `docs/reference/`. The booking detai
 
 ### Where this changes the brief (proposed, waiting for George's agreement)
 
-- **Payments:** bank transfer is how Paper Fox is paid today, and the brief assumes card payments through Stripe. Waiting on question 4.
+- **Payments (agreed):** bank transfer only for now, so no Stripe. See section 4 above.
 - **Profit reports:** the brief only has sales reports. Profit needs each event's costs (room hire, food, goody bags and so on), so the costs need recording.
 - **Waiting list:** in, with offers that have a time limit.
 - **Credit:** customers can hold credit for future events or products, as the terms describe.
