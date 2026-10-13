@@ -1,0 +1,102 @@
+name: CI
+
+# Pull requests, plus main after merging. (Not every branch push as well:
+# that would run everything twice and use up the free Actions minutes.)
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, types and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm format:check
+      - run: pnpm test
+
+  supabase:
+    name: Database and browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SITE_URL: http://localhost:3100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - name: Start Supabase (database, auth, API and test mailbox only)
+        run: supabase start -x realtime,storage-api,imgproxy,studio,edge-runtime,logflare,vector,supavisor
+      - name: Use the local Supabase settings
+        run: |
+          supabase status -o env > /tmp/supabase.env
+          set -a; . /tmp/supabase.env; set +a
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY:-$PUBLISHABLE_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY:-$SECRET_KEY}"
+            echo "DATABASE_URL=$DB_URL"
+            echo "MAILPIT_URL=${MAILPIT_URL:-${INBUCKET_URL:-http://127.0.0.1:54324}}"
+          } >> "$GITHUB_ENV"
+
+      - name: Check the database types match the migrations
+        run: |
+          supabase gen types typescript --db-url "$DATABASE_URL" --schema public > /tmp/database.types.ts
+          pnpm exec prettier --stdin-filepath src/lib/supabase/database.types.ts < /tmp/database.types.ts > /tmp/database.types.formatted.ts
+          diff -u src/lib/supabase/database.types.ts /tmp/database.types.formatted.ts || {
+            echo "::error::src/lib/supabase/database.types.ts is out of date. Run pnpm db:types and commit the result."
+            exit 1
+          }
+
+      - run: pnpm test:db
+
+      - name: Cache Playwright's browser
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Playwright's browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Playwright's system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - run: pnpm build
+      - run: pnpm test:e2e
+
+      - name: Keep the browser test report if something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7

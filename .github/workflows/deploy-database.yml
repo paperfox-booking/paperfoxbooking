@@ -1,0 +1,58 @@
+name: Deploy database
+
+# Applies new migrations (supabase/migrations) to the staging Supabase project
+# whenever they reach main, so nobody changes the database by hand. Production
+# gets the same treatment, with an approval step, before launch.
+#
+# Needs these repository settings (see docs/deploy.md):
+#   secrets:   SUPABASE_ACCESS_TOKEN, SUPABASE_STAGING_DB_PASSWORD
+#   variables: SUPABASE_STAGING_PROJECT_REF
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/migrations/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-database-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  staging:
+    name: Apply migrations to staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+      PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the GitHub settings are in place
+        run: |
+          missing=""
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || missing="$missing secret SUPABASE_ACCESS_TOKEN,"
+          [ -n "$SUPABASE_DB_PASSWORD" ] || missing="$missing secret SUPABASE_STAGING_DB_PASSWORD,"
+          [ -n "$PROJECT_REF" ] || missing="$missing variable SUPABASE_STAGING_PROJECT_REF,"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub settings:${missing%,}. See docs/deploy.md."
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+
+      - name: Connect to the staging project
+        run: supabase link --project-ref "$PROJECT_REF"
+
+      - name: Show which migrations will be applied
+        run: supabase db push --dry-run
+
+      - name: Apply them
+        run: supabase db push

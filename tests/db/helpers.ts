@@ -1,0 +1,125 @@
+import { randomUUID } from "node:crypto";
+import pg from "pg";
+
+/**
+ * Helpers for testing row level security directly in Postgres.
+ *
+ * Each test runs inside a transaction that is always rolled back, so tests
+ * never leave data behind. Inside it, `as(user)` switches to the same database
+ * role and JWT claims Supabase uses for a signed-in request, so the real RLS
+ * policies decide what the query can see and change.
+ */
+
+const connectionString =
+  process.env.DATABASE_URL ??
+  "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+
+export const pool = new pg.Pool({ connectionString, max: 4 });
+
+export type StaffRole = "owner" | "admin" | "door";
+
+export interface TestUser {
+  id: string;
+  email: string;
+}
+
+export class TestTransaction {
+  private savepoint = 0;
+
+  constructor(private readonly client: pg.PoolClient) {}
+
+  /** Runs SQL as whoever the transaction is currently acting as. */
+  query<Row extends pg.QueryResultRow = pg.QueryResultRow>(
+    sql: string,
+    params: unknown[] = [],
+  ) {
+    return this.client.query<Row>(sql, params);
+  }
+
+  /** Creates a person the way Supabase Auth does (the profile trigger runs). */
+  async createUser(name = "Test person"): Promise<TestUser> {
+    const id = randomUUID();
+    const email = `${id.slice(0, 8)}@example.test`;
+    await this.client.query(
+      `insert into auth.users (id, email, aud, role, raw_user_meta_data)
+       values ($1, $2, 'authenticated', 'authenticated', $3)`,
+      [id, email, JSON.stringify({ full_name: name })],
+    );
+    return { id, email };
+  }
+
+  /** Creates a team member with a role, bypassing RLS (setup only). */
+  async createStaff(role: StaffRole, name = `Test ${role}`): Promise<TestUser> {
+    const user = await this.createUser(name);
+    await this.client.query(
+      `insert into public.staff (user_id, role) values ($1, $2)`,
+      [user.id, role],
+    );
+    return user;
+  }
+
+  /** Acts as a signed-in person until `asSuperuser()` is called. */
+  async as(user: TestUser): Promise<void> {
+    await this.client.query("reset role");
+    await this.client.query(
+      "select set_config('request.jwt.claims', $1, true)",
+      [
+        JSON.stringify({
+          sub: user.id,
+          role: "authenticated",
+          email: user.email,
+        }),
+      ],
+    );
+    await this.client.query("set local role authenticated");
+  }
+
+  /** Acts as a visitor who isn't signed in. */
+  async asAnonymous(): Promise<void> {
+    await this.client.query("reset role");
+    await this.client.query(
+      "select set_config('request.jwt.claims', $1, true)",
+      [JSON.stringify({ role: "anon" })],
+    );
+    await this.client.query("set local role anon");
+  }
+
+  /** Goes back to the test's own superuser connection (no RLS). */
+  async asSuperuser(): Promise<void> {
+    await this.client.query("reset role");
+    await this.client.query(
+      "select set_config('request.jwt.claims', '', true)",
+    );
+  }
+
+  /**
+   * Runs SQL that should fail, and returns the error message. Uses a savepoint
+   * so the transaction carries on afterwards.
+   */
+  async expectError(sql: string, params: unknown[] = []): Promise<string> {
+    const name = `expect_error_${++this.savepoint}`;
+    await this.client.query(`savepoint ${name}`);
+    try {
+      await this.client.query(sql, params);
+    } catch (error) {
+      await this.client.query(`rollback to savepoint ${name}`);
+      return error instanceof Error ? error.message : String(error);
+    }
+    await this.client.query(`release savepoint ${name}`);
+    throw new Error(`Expected this to fail, but it succeeded: ${sql}`);
+  }
+}
+
+/** Runs a test body in a transaction that is always rolled back. */
+export async function inTransaction(
+  body: (tx: TestTransaction) => Promise<void>,
+): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await body(new TestTransaction(client));
+  } finally {
+    await client.query("rollback").catch(() => undefined);
+    client.release();
+  }
+}
