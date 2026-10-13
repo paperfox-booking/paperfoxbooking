@@ -11,6 +11,20 @@ import { AvailabilityBadge } from "./availability";
 export async function UpcomingEvents() {
   const events = await getUpcomingEvents();
 
+  if (events === null) {
+    return (
+      <Card className="mt-4">
+        <p className="text-lg font-bold">
+          We couldn&apos;t load the events just now.
+        </p>
+        <p className="mt-2">
+          Please try again in a minute, or email us at{" "}
+          <a href={`mailto:${business.email}`}>{business.email}</a>.
+        </p>
+      </Card>
+    );
+  }
+
   if (events.length === 0) {
     return (
       <Card className="mt-4">

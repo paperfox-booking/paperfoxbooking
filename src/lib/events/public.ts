@@ -140,17 +140,25 @@ function toPublicEvent(row: EventRow, now: Date): PublicEvent {
   };
 }
 
-/** Events that haven't finished yet, soonest first. */
-export async function getUpcomingEvents(): Promise<PublicEvent[]> {
+/**
+ * Events that haven't finished yet, soonest first, or null if they couldn't
+ * be loaded. A failure is only remembered for a minute, so the page recovers
+ * by itself (for example while a new release waits for its database change).
+ */
+export async function getUpcomingEvents(): Promise<PublicEvent[] | null> {
   "use cache";
-  cacheLife("hours");
   cacheTag(PUBLIC_EVENTS_TAG);
 
   const now = new Date();
   const { data, error } = await selectEvents()
     .gt("ends_at", now.toISOString())
     .order("starts_at", { ascending: true });
-  if (error) throw new Error(`Couldn't load events: ${error.message}`);
+  if (error) {
+    console.error("Couldn't load upcoming events", error.message);
+    cacheLife("seconds");
+    return null;
+  }
+  cacheLife("hours");
   return data.map((row) => toPublicEvent(row, now));
 }
 
@@ -159,16 +167,19 @@ export async function getPublicEvent(
   slug: string,
 ): Promise<PublicEvent | null> {
   "use cache";
-  cacheLife("hours");
   cacheTag(PUBLIC_EVENTS_TAG);
 
   const now = new Date();
   const { data, error } = await selectEvents().eq("slug", slug).maybeSingle();
-  if (error) throw new Error(`Couldn't load the event: ${error.message}`);
+  if (error) {
+    cacheLife("seconds");
+    throw new Error(`Couldn't load the event: ${error.message}`);
+  }
+  cacheLife("hours");
   return data ? toPublicEvent(data, now) : null;
 }
 
 /** The web addresses of upcoming public events, to build ahead of time. */
 export async function getUpcomingEventSlugs(): Promise<string[]> {
-  return (await getUpcomingEvents()).map((event) => event.slug);
+  return ((await getUpcomingEvents()) ?? []).map((event) => event.slug);
 }

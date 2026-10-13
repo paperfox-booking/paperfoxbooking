@@ -31,14 +31,21 @@ export async function generateStaticParams() {
   // Next.js needs at least one to check the page builds; this one is a 404.
   return slugs.length
     ? slugs.map((slug) => ({ slug }))
-    : [{ slug: "no-events-yet" }];
+    : [{ slug: PLACEHOLDER_SLUG }];
+}
+
+const PLACEHOLDER_SLUG = "no-events-yet";
+
+/** The event for a web address, without asking the database about the placeholder. */
+async function findEvent(slug: string): Promise<PublicEvent | null> {
+  return slug === PLACEHOLDER_SLUG ? null : getPublicEvent(slug);
 }
 
 export async function generateMetadata(
   props: PageProps<"/events/[slug]">,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const event = await getPublicEvent(slug);
+  const event = await findEvent(slug);
   if (!event) return { title: "Event not found" };
   const when = formatUkDateRange(event.startsAt, event.endsAt);
   const description =
@@ -70,7 +77,7 @@ async function EventDetails({
   params,
 }: Pick<PageProps<"/events/[slug]">, "params">) {
   const { slug } = await params;
-  const event = await getPublicEvent(slug);
+  const event = await findEvent(slug);
   if (!event) notFound();
   const from = lowestPrice(event.options);
 
