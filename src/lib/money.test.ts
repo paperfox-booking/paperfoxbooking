@@ -3,6 +3,7 @@ import {
   formatPence,
   formatPrice,
   parsePoundsToPence,
+  penceToPoundsInput,
   sumPence,
 } from "./money";
 
@@ -75,5 +76,19 @@ describe("sumPence", () => {
 
   it("rejects fractional pence", () => {
     expect(() => sumPence([100, 0.5])).toThrow(TypeError);
+  });
+});
+
+describe("penceToPoundsInput", () => {
+  it("writes pounds the way people type them", () => {
+    expect(penceToPoundsInput(19500)).toBe("195");
+    expect(penceToPoundsInput(19550)).toBe("195.50");
+    expect(penceToPoundsInput(5)).toBe("0.05");
+  });
+
+  it("round trips with parsePoundsToPence", () => {
+    for (const pence of [0, 1, 99, 6000, 8500, 24550, 123456]) {
+      expect(parsePoundsToPence(penceToPoundsInput(pence))).toBe(pence);
+    }
   });
 });

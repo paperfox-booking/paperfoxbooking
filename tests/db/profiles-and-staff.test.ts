@@ -250,6 +250,10 @@ describe("staff access", () => {
       const owner = await tx.createStaff("owner");
       const admin = await tx.createStaff("admin");
       const door = await tx.createStaff("door");
+      // Only this test's team (a local database may hold others).
+      await tx.query("delete from public.staff where user_id <> all($1)", [
+        [owner.id, admin.id, door.id],
+      ]);
 
       await tx.as(door);
       expect((await tx.query("select user_id from public.staff")).rows).toEqual(
@@ -291,6 +295,10 @@ describe("staff access", () => {
   it("never leaves Paper Fox without an owner", async () => {
     await inTransaction(async (tx) => {
       const owner = await tx.createStaff("owner");
+      // Make them the only owner (a local database may hold others).
+      await tx.query("delete from public.staff where user_id <> $1", [
+        owner.id,
+      ]);
       await tx.as(owner);
       expect(
         await tx.expectError(

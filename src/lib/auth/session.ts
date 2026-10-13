@@ -81,3 +81,17 @@ export async function requireStaff(
   }
   return { allowed: true, user: { ...user, staffRole: role } };
 }
+
+/**
+ * For Server Actions: the signed-in team member, if they have this
+ * permission. Actions must check this themselves, because anyone can send a
+ * request to an action, whatever the page showed them.
+ */
+export async function staffWithPermission(
+  permission: Permission,
+): Promise<(CurrentUser & { staffRole: StaffRole }) | null> {
+  const user = await getCurrentUser();
+  const role = user?.staffRole;
+  if (!user || !role || !can(role, permission)) return null;
+  return { ...user, staffRole: role };
+}

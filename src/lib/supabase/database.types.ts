@@ -51,7 +51,7 @@ export type Database = {
           hotel_info?: string;
           id?: string;
           included?: string;
-          slug: string;
+          slug?: string;
           starts_at: string;
           status?: Database["public"]["Enums"]["event_status"];
           summary?: string;

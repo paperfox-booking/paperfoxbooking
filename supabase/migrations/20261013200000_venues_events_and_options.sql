@@ -101,8 +101,9 @@ create type public.event_status as enum ('draft', 'published', 'sold_out', 'canc
 create table public.events (
   id uuid primary key default gen_random_uuid(),
   -- The readable part of the event's web address. Set once from the title,
-  -- then never changed, so shared links keep working.
-  slug text not null unique,
+  -- then never changed, so shared links keep working. The trigger below
+  -- always sets it; the empty default just means it needn't be given.
+  slug text not null default '' unique,
   title text not null,
   -- A sentence or two for the events list and link previews.
   summary text not null default '',
@@ -354,7 +355,16 @@ alter table public.ticket_types enable row level security;
 -- The columns people may set are listed, so nobody can fake who created a
 -- record, change an event's web address or create one that's already live.
 revoke all on public.venues, public.events, public.ticket_types from anon, authenticated;
-grant select on public.venues, public.events, public.ticket_types to anon, authenticated;
+grant select on public.venues, public.ticket_types to anon, authenticated;
+grant select on public.events to authenticated;
+-- The Facebook group is private to people who've booked, so visitors can't
+-- read its address.
+grant select (
+  id, slug, title, summary, description, included, hotel_info, venue_id,
+  starts_at, ends_at, status, capacity, booking_opens_at, booking_closes_at,
+  balance_due_on, deposit_hold_days, copied_from_event_id, created_at,
+  updated_at, deleted_at
+) on public.events to anon;
 
 grant insert (name, address, postcode, phone, map_url, parking, access_info)
   on public.venues to authenticated;

@@ -30,6 +30,30 @@ describe("what visitors can see", () => {
     });
   });
 
+  it("doesn't show visitors an event's private Facebook group", async () => {
+    await inTransaction(async (tx) => {
+      const event = await tx.createEvent({ status: "published" });
+      await tx.query(
+        "update public.events set facebook_group_url = 'https://www.facebook.com/groups/private' where id = $1",
+        [event],
+      );
+      await tx.asAnonymous();
+      expect(
+        await tx.expectError(
+          "select facebook_group_url from public.events where id = $1",
+          [event],
+        ),
+      ).toMatch(/permission denied/);
+      const { rows } = await tx.query(
+        "select title, status from public.events where id = $1",
+        [event],
+      );
+      expect(rows).toEqual([
+        { title: "Test crop weekend", status: "published" },
+      ]);
+    });
+  });
+
   it("hides deleted options and venues", async () => {
     await inTransaction(async (tx) => {
       const venue = await tx.createVenue("Old venue");

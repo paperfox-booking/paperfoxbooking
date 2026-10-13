@@ -3,6 +3,7 @@ import {
   availability,
   balanceAfterDeposit,
   defaultBalanceDueOn,
+  describeTimeBefore,
   lowestPrice,
   paymentPlan,
   suggestedCopyStart,
@@ -145,5 +146,19 @@ describe("availability", () => {
     expect(availability({ ...event, status: "cancelled" }, now).kind).toBe(
       "cancelled",
     );
+  });
+});
+
+describe("describeTimeBefore", () => {
+  it("uses weeks and days", () => {
+    expect(describeTimeBefore(42)).toBe("6 weeks");
+    // March 2027: balance due 26/01/2027, event starts 19/03/2027.
+    expect(describeTimeBefore(52)).toBe("7 weeks and 3 days");
+    expect(describeTimeBefore(15)).toBe("2 weeks and 1 day");
+  });
+
+  it("uses days under 2 weeks", () => {
+    expect(describeTimeBefore(10)).toBe("10 days");
+    expect(describeTimeBefore(1)).toBe("1 day");
   });
 });

@@ -115,6 +115,19 @@ export function suggestedCopyTitle(
     .replace(new RegExp(`\\b${oldYear}\\b`, "g"), newYear);
 }
 
+/**
+ * How long before the event a date is, in words: "6 weeks", "7 weeks and
+ * 3 days", "10 days", "1 day".
+ */
+export function describeTimeBefore(days: number): string {
+  const weeks = Math.floor(days / 7);
+  const rest = days % 7;
+  const dayWords = (count: number) => (count === 1 ? "1 day" : `${count} days`);
+  if (weeks < 2) return dayWords(days);
+  const weekWords = `${weeks} weeks`;
+  return rest === 0 ? weekWords : `${weekWords} and ${dayWords(rest)}`;
+}
+
 export type EventStatus =
   "draft" | "published" | "sold_out" | "cancelled" | "finished";
 

@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { Card } from "@/components/ui/card";
-import { business } from "@/lib/business";
+import { Suspense } from "react";
+import { UpcomingEvents } from "@/components/site/upcoming-events";
 
 export default function HomePage() {
   return (
@@ -34,16 +34,9 @@ export default function HomePage() {
         <h2 id="events-heading" className="text-4xl">
           Upcoming events
         </h2>
-        <Card className="mt-4">
-          <p className="text-lg font-bold">
-            There aren&apos;t any events open for booking here yet.
-          </p>
-          <p className="mt-2">
-            Online booking is coming soon. Until then, email us at{" "}
-            <a href={`mailto:${business.email}`}>{business.email}</a> to book or
-            ask about a place.
-          </p>
-        </Card>
+        <Suspense fallback={<p className="mt-4">Loading events…</p>}>
+          <UpcomingEvents />
+        </Suspense>
       </section>
     </>
   );
