@@ -96,7 +96,9 @@ export async function signInAsTeam(
   await giveRole(email, role);
   await page.goto(path);
   await teamSignIn(page, email, password);
-  await expect(page).toHaveURL(new RegExp(`${path.replace(/\//g, "\\/")}$`));
+  await expect(page).toHaveURL(
+    new RegExp(`${path.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}$`),
+  );
   return email;
 }
 

@@ -183,6 +183,10 @@ Open an event and choose **Profit and loss**:
 - **Profit** is income less costs, and **cash so far** is money received
   less costs paid.
 
+**Reports → See payments by date** lists every payment by the day it
+arrived, with totals for bank transfers and cash, to check against the bank
+statement. It downloads as a CSV too.
+
 **Reports** in the menu shows every event side by side, with totals, for one
 year or all of them, and downloads as a CSV for your accountant. Copying an
 event copies its costs too, as unpaid estimates to update.

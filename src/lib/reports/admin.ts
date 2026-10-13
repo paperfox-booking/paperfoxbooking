@@ -1,6 +1,7 @@
 import "server-only";
 import { sumPayments } from "@/lib/bookings/money";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { PaymentReportRow } from "./payments";
 import { profitFor, type Profit } from "./profit";
 
 /**
@@ -171,4 +172,34 @@ export async function getCost(costId: string): Promise<CostRow | null> {
         notes: data.notes,
       }
     : null;
+}
+
+/** Payments received between two UK dates (inclusive), not removed ones. */
+export async function listPaymentsBetween(
+  from: string,
+  to: string,
+): Promise<PaymentReportRow[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("payments")
+    .select(
+      `id, received_on, amount_pence, method, note,
+       booking:bookings(id, reference, customer:customers(full_name), event:events(title))`,
+    )
+    .is("deleted_at", null)
+    .gte("received_on", from)
+    .lte("received_on", to)
+    .order("received_on");
+  if (error) throw new Error(`Couldn't load payments: ${error.message}`);
+  return data.map((payment) => ({
+    id: payment.id,
+    receivedOn: payment.received_on!,
+    amountPence: payment.amount_pence,
+    method: payment.method,
+    note: payment.note,
+    bookingId: payment.booking?.id ?? "",
+    reference: payment.booking?.reference ?? "",
+    fullName: payment.booking?.customer?.full_name ?? "",
+    eventTitle: payment.booking?.event?.title ?? "",
+  }));
 }

@@ -19,6 +19,11 @@ export default function ReportsPage(props: PageProps<"/admin/reports">) {
   return (
     <>
       <h1 className="text-5xl">Profit and loss</h1>
+      <p className="mt-2">
+        <Link href="/admin/reports/payments">
+          See payments by date, to check against the bank
+        </Link>
+      </p>
       <p className="mt-2 max-w-3xl">
         Income, costs and profit for each event. Income is what everyone booked
         owes, plus money kept from cancellations. Profit is an estimate until
