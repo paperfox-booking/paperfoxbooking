@@ -96,6 +96,11 @@ async function EventDetails({
         {canManage ? (
           <>
             <Button asChild variant="secondary">
+              <Link href={`/admin/events/${event.id}/costs`}>
+                Profit and loss
+              </Link>
+            </Button>
+            <Button asChild variant="secondary">
               <Link href={`/admin/events/${event.id}/edit`}>
                 Change details
               </Link>
