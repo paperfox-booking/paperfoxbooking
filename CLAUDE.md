@@ -537,6 +537,33 @@ The email wording and the terms are kept in `docs/reference/`. The booking detai
 - **Rooms:** places may need assigning to rooms, each with its own limit.
 - **Event documents:** each event needs a "booking details" and a "confirmation" document. The system could produce these from the event's details, or staff could upload their own.
 
+### Questions for later (George wants to build first)
+
+George asked to start building straight away and answer these later. Until he does, build with the default shown. Every default must be easy to change later: a setting or a per-event field, not something hard-coded.
+
+| # | Question | Default until answered |
+| --- | --- | --- |
+| 1 | Owner's surname, and which of Nichola and Morag is the owner in the system's terms | Both are owners |
+| 2 | The logo font | Bebas Neue for headings, a plain, readable sans serif for body text |
+| 3 | Always the Holiday Inn Coventry? | Venues are a list, with the Holiday Inn as the first |
+| 4 | Prices of £225 and £235 in the spreadsheet | Staff can change the price on a single booking, with a reason |
+| 5 | Sell class kits through the system? | Not in the first version |
+| 6 | How long a place is held waiting for the deposit | Set per event, default 7 days. A reminder before it runs out, then the place is released. Staff can extend it |
+| 7 | Balance due date: exactly 6 weeks before, or chosen per event? | Set per event, defaulting to 6 weeks before |
+| 8 | Paying in parts allowed? | Yes: staff record any amount |
+| 9 | Cancelling more than 6 weeks before: keep £60, or the whole deposit? | Staff choose the refund amount, with the terms shown as a guide |
+| 10 | What happens if the balance isn't paid by the due date | Shown as overdue for staff to chase. Nothing automatic |
+| 11 | Is "Thkd for Pmt" a separate email? | A "balance paid" email, the same as B3 |
+| 12 | Other spreadsheets to import, and when to import March 2027 | Import is a later task |
+| 13 | VAT registered? (section 13, question 6) | Not VAT registered |
+| 14 | QR codes and a check-in screen? (question 9) | Not in the first version |
+| 15 | Discount codes, gift vouchers? (question 10) | No |
+| 16 | Who needs staff access, and what each can do (question 11) | Nichola and Morag as owners, and George as owner while it's being built |
+| 17 | Mailing list or newsletter tool? (question 14) | A marketing consent tick box only |
+| 18 | Accounts in Paper Fox's name? (question 15) | Assume yes. George sets them up |
+| 19 | How long to keep health information after an event | To confirm before launch |
+| 20 | The web address for bookings and the email sender (question 13) | `book.paper-fox.co.uk`, and `bookings@paper-fox.co.uk` |
+
 ### 6, 7, 9, 13 to 16
 
-To ask.
+See "Questions for later" above, and the crucial questions asked on 13/10/2026.
