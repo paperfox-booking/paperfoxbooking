@@ -43,6 +43,9 @@ For each project, in the Supabase dashboard:
    address, for example `https://book.paper-fox.co.uk` (or the Vercel address
    until the real one is ready).
 
+The database tables are created automatically by GitHub, not by hand: see
+[`docs/deploy.md`](deploy.md) for the one-time setup.
+
 Supabase's menu names change from time to time. If something isn't exactly
 where this says, it will be close by.
 

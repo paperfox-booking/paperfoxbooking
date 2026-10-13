@@ -10,6 +10,7 @@ crafting weekends:
   Paper Fox's details and George's decisions.
 - **Setting up accounts and running it locally:** [`docs/setup.md`](docs/setup.md).
 - **The database:** [`docs/data-model.md`](docs/data-model.md).
+- **Deploying and rolling back:** [`docs/deploy.md`](docs/deploy.md).
 
 Built with Next.js, Supabase (London region), Tailwind CSS and TypeScript.
 
