@@ -20,6 +20,11 @@ import {
   type OptionField,
 } from "@/lib/validation/events";
 import {
+  ROOM_FIELDS,
+  roomSchema,
+  type RoomField,
+} from "@/lib/validation/bookings";
+import {
   fieldErrorsFrom,
   readForm,
   type FormState,
@@ -286,4 +291,78 @@ async function wouldLeavePublishedEventEmpty(
   return othersOnSale
     ? null
     : "This is the only option on sale for a published event. Add another option, or unpublish the event first.";
+}
+
+export type RoomFormState = FormState<RoomField> & { done?: boolean };
+
+/** Adds a room to an event, or changes one. */
+export async function saveRoomAction(
+  eventId: string,
+  roomId: string | null,
+  _previous: RoomFormState,
+  formData: FormData,
+): Promise<RoomFormState> {
+  const values = readForm(formData, ROOM_FIELDS);
+  if (!(await staffWithPermission("events.manage"))) {
+    return { values, error: NOT_ALLOWED };
+  }
+  const parsed = roomSchema.safeParse(values);
+  if (!parsed.success) {
+    return { values, fieldErrors: fieldErrorsFrom(parsed.error) };
+  }
+  const supabase = await createSupabaseServerClient();
+  const room = {
+    name: parsed.data.name,
+    capacity: parsed.data.capacity,
+    notes: parsed.data.notes,
+  };
+  const { error } = roomId
+    ? await supabase
+        .from("event_rooms")
+        .update(room)
+        .eq("id", roomId)
+        .eq("event_id", eventId)
+    : await supabase.from("event_rooms").insert({
+        ...room,
+        event_id: eventId,
+        sort_order: Number(formData.get("sortOrder") ?? 0) || 0,
+      });
+  if (error) {
+    return {
+      values,
+      error:
+        error.code === "23505"
+          ? "There's already a room with that name."
+          : friendlyDatabaseError(error),
+    };
+  }
+  redirect(`/admin/events/${eventId}/rooms?notice=saved`);
+}
+
+/** Removes a room nobody is in. */
+export async function removeRoomAction(
+  eventId: string,
+  roomId: string,
+): Promise<ActionState> {
+  if (!(await staffWithPermission("events.manage"))) {
+    return { error: NOT_ALLOWED };
+  }
+  const supabase = await createSupabaseServerClient();
+  const { count } = await supabase
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("room_id", roomId)
+    .is("cancelled_at", null);
+  if (count) {
+    return {
+      error: `${count === 1 ? "1 person is" : `${count} people are`} in this room. Move them to another room first.`,
+    };
+  }
+  const { error } = await supabase
+    .from("event_rooms")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", roomId)
+    .eq("event_id", eventId);
+  if (error) return { error: friendlyDatabaseError(error) };
+  redirect(`/admin/events/${eventId}/rooms?notice=removed`);
 }

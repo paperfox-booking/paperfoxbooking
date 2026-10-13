@@ -108,3 +108,15 @@ export async function getEvent(id: string): Promise<AdminEvent | null> {
       ),
   };
 }
+
+/** How many people have an active booking on an event. */
+export async function countBooked(eventId: string): Promise<number> {
+  const supabase = await createSupabaseServerClient();
+  const { count, error } = await supabase
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .is("cancelled_at", null);
+  if (error) throw new Error(`Couldn't count the bookings: ${error.message}`);
+  return count ?? 0;
+}
