@@ -126,11 +126,19 @@ Do this once the database has been set up (see `docs/deploy.md`).
    ```sql
    insert into public.staff (user_id, role)
    select id, 'owner' from auth.users
-   where email in ('nichola@example.com', 'morag@example.com', 'you@example.com');
+   where email in ('nichola@example.com', 'morag@example.com', 'you@example.com')
+   on conflict (user_id) do nothing;
    ```
 
    Use `'admin'` or `'door'` instead of `'owner'` for anyone who should have
-   less access.
+   less access. It's safe to run again: anyone already on the team is skipped.
+   To check who's on the team, run:
+
+   ```sql
+   select u.email, s.role
+   from public.staff s
+   join auth.users u on u.id = s.user_id;
+   ```
 
 4. **Tell each person their temporary password** in person or by phone, not
    by email. They sign in at **Team sign in** and change it straight away
