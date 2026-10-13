@@ -1,9 +1,11 @@
 name: CI
 
+# Pull requests, plus main after merging. (Not every branch push as well:
+# that would run everything twice and use up the free Actions minutes.)
 on:
   pull_request:
   push:
-    branches: [main, "claude/**"]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
