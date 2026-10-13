@@ -64,13 +64,24 @@ describe("newPasswordSchema", () => {
     ).toBe(true);
   });
 
-  it("asks for at least 12 characters", () => {
+  it("asks for at least 8 characters", () => {
     const result = newPasswordSchema.safeParse({
       password: "short",
       confirm: "short",
     });
     expect(result.error?.issues[0]?.path).toEqual(["password"]);
-    expect(result.error?.issues[0]?.message).toMatch(/at least 12 characters/);
+    expect(result.error?.issues[0]?.message).toMatch(/at least 8 characters/);
+  });
+
+  it("accepts exactly 8 characters and refuses 7", () => {
+    expect(
+      newPasswordSchema.safeParse({ password: "8chars!!", confirm: "8chars!!" })
+        .success,
+    ).toBe(true);
+    expect(
+      newPasswordSchema.safeParse({ password: "7chars!", confirm: "7chars!" })
+        .success,
+    ).toBe(false);
   });
 
   it("explains when the two don't match", () => {

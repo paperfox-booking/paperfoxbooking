@@ -28,7 +28,7 @@ export const signInCodeSchema = z
 // Passwords are only for the Paper Fox team. bcrypt (which Supabase uses)
 // ignores anything after 72 bytes, so longer passwords aren't allowed.
 const PASSWORD_MAX = 72;
-export const PASSWORD_MIN = 12;
+export const PASSWORD_MIN = 8;
 
 /** A password typed in to sign in: just needs to be there. */
 export const passwordSchema = z

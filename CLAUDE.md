@@ -553,6 +553,7 @@ The email wording and the terms are kept in `docs/reference/`. The booking detai
 - **Team sign-in (decided 13/10/2026): email and password.** Supabase's built-in email sender only sends 2 emails an hour, and sending through Resend needs the paper-fox.co.uk DNS set up first.
   - So the team (Nichola, Morag and George) sign in with an email and password on a separate **Team sign in** page.
   - George creates their accounts in the Supabase dashboard with a temporary password, and they change it in the admin area.
+  - **Minimum password length: 8 characters** (George's choice, 13/10/2026). The same minimum is set in Supabase and in the site.
   - Customers keep the emailed 6-digit code, switched on once Resend is set up. That's needed before the emails phase anyway.
 - **Hosting:** Vercel, as the brief recommends. George will set up the Supabase and Vercel accounts when ready. Until then he gets screenshots.
 
