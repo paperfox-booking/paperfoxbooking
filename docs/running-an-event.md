@@ -322,6 +322,10 @@ use them.
 - the **terms and conditions**. Changing them makes a new version, and every
   version is kept.
 
+**Settings → Team** shows who can sign in to the admin area. Change someone's
+role, remove them, or add someone whose account George has created in
+Supabase. There's always at least one owner: the last one can't be removed.
+
 ## Coming next
 
 Bringing in the March 2027 spreadsheet on the live site, online booking with

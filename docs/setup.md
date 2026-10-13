@@ -161,7 +161,8 @@ Do this once the database has been set up (see `docs/deploy.md`).
    ```
 
    Use `'admin'` or `'door'` instead of `'owner'` for anyone who should have
-   less access. It's safe to run again: anyone already on the team is skipped.
+   less access. Once there's an owner, anyone after that can be added on the
+   **Settings → Team** screen instead (after step 2), with no SQL. It's safe to run again: anyone already on the team is skipped.
    To check who's on the team, run:
 
    ```sql

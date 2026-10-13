@@ -96,6 +96,14 @@ async function Settings({
           <Link href="/admin/emails">Change what the emails say</Link>
         </p>
       </Card>
+      <Card>
+        <h2 className="text-3xl">Team</h2>
+        <p className="mt-2">
+          <Link href="/admin/settings/team">
+            See who can sign in, and change what they can do
+          </Link>
+        </p>
+      </Card>
       <SettingsForm defaults={defaults} termsVersion={row.terms_version} />
     </div>
   );

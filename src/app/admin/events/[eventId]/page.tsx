@@ -138,6 +138,39 @@ async function EventDetails({
       <Options event={event} canManage={canManage} />
       <Details event={event} />
 
+      {can(access.user.staffRole, "payments.view") ? (
+        <section aria-labelledby="documents-heading" className="space-y-2">
+          <h2 id="documents-heading" className="text-3xl">
+            Documents for emails
+          </h2>
+          <p>
+            Made from this event&apos;s details, and attached to emails. Check
+            them after changing the details above. Each person&apos;s copy has
+            their own name, reference and dates.
+          </p>
+          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+            {(
+              [
+                ["booking-details", "Booking details (PDF)"],
+                ["confirmation", "Confirmation (PDF)"],
+                ["terms", "Terms and conditions (PDF)"],
+              ] as const
+            ).map(([kind, label]) => (
+              <li key={kind}>
+                <a
+                  href={`/admin/events/${event.id}/documents/${kind}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {label}
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {canManage ? (
         <EventStatusActions
           eventId={event.id}
