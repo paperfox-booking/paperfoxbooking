@@ -3,6 +3,7 @@
 These are the three standard emails Paper Fox sends today from Outlook. They are the starting point for the system's email templates. They're copied word for word from the March 2027 versions (spelling included). Customer names and addresses are left out.
 
 The attachments they mention:
+
 - `Paper Fox Events Terms & Conditions 2026.pdf`, kept here as [`terms-and-conditions-2026.pdf`](terms-and-conditions-2026.pdf).
 - `2 - March 27 Confirmation.pdf`, kept here as [`march-2027-confirmation.pdf`](march-2027-confirmation.pdf).
 - `1-Mar 27 booking details.pdf`. This is **not** kept here because it contains the bank details. It gives the event date, the venue, prices and deposits, payment due dates, bank details, hotel rates and contacts, and a venue map.
