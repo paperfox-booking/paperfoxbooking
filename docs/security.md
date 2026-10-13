@@ -43,8 +43,12 @@ prove them (`tests/db/`).
   and shred it afterwards.
 - **No real customer data** goes in the code, the tests or the demo data.
   The March 2027 spreadsheet is never added to the repository.
-- Requests to see or delete someone's data: for now, George exports or
-  removes it on request. Screens for this come before launch.
+- **A request to see their data:** open them under **People**, and choose
+  **Download everything we hold about them**. It's a file with their
+  details, bookings, payments, emails and waiting lists, to send them.
+- **A request to delete their data:** for now, George removes it on request,
+  keeping what accounting law needs (payments, made anonymous). A screen for
+  this comes before launch.
 
 ## Backups
 
