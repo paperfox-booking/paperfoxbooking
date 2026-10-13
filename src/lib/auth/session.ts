@@ -1,5 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -24,6 +25,9 @@ export interface CurrentUser {
 }
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  // Checking a session compares its expiry with the current time, so it must
+  // happen when the request arrives, never while Next.js prerenders ahead.
+  await connection();
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getClaims();
   const userId = data?.claims.sub;
