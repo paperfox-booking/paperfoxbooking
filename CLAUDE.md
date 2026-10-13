@@ -537,6 +537,36 @@ The email wording and the terms are kept in `docs/reference/`. The booking detai
 - **Rooms:** places may need assigning to rooms, each with its own limit.
 - **Event documents:** each event needs a "booking details" and a "confirmation" document. The system could produce these from the event's details, or staff could upload their own.
 
+### Crucial answers (13/10/2026)
+
+- **First event on the system: March 2027.** Its bookings are already taken (110 people, from the spreadsheet), so the first job is running it on the system:
+  - bring the spreadsheet across;
+  - record payments;
+  - chase the balances due 26/01/2027;
+  - send the emails.
+
+  Online booking for later events comes after that.
+- **Rooms:** Paper Fox has room maps (George will send them).
+  - Until they arrive: one place limit for the whole event, plus the room recorded for each person.
+  - A seating plan built from the maps may come later.
+- **Sign-in: email address plus a 6-digit code** emailed each time (Supabase email OTP), with no password. George said "email address and a generated pin, that we choose". We read "that we choose" as "that's our choice", not a fixed PIN that Paper Fox sets for each customer. A fixed PIN was advised against, because staff would know it and short PINs can be guessed. To confirm with George.
+- **Hosting:** Vercel, as the brief recommends. George will set up the Supabase and Vercel accounts when ready. Until then he gets screenshots.
+
+### Build order (proposed 13/10/2026, replaces the order of phases 1 to 4 in section 14)
+
+1. **Phase 0: foundations.** As in section 14, with sign-in by emailed code.
+2. **Phase 1: events.** Venues, events, the two ticket options (4pm and 9am), deposits and balance dates, copying an event, and the public event pages.
+3. **Phase 2: running March 2027.**
+   - Admin bookings and attendees, and the spreadsheet import.
+   - Recording bank transfers and cash.
+   - Booking references, the B1, B2 and B3 emails, balance chasers, and the email log.
+   - The attendee list and CSV export.
+4. **Phase 3: online booking.** Booking with a deposit by bank transfer, holds and expiry, and the waiting list with offers.
+5. **Phase 4: customer accounts and reports.**
+   - My bookings and statements.
+   - Sales and profit reports, with event costs.
+   - Refunds and credit.
+
 ### Questions for later (George wants to build first)
 
 George asked to start building straight away and answer these later. Until he does, build with the default shown. Every default must be easy to change later: a setting or a per-event field, not something hard-coded.
