@@ -256,3 +256,45 @@ export const roomSchema = z.object({
   capacity: optionalWholeNumber(1, 2000, "78"),
   notes: optionalText(300),
 });
+
+// ---------------------------------------------------------------------------
+// One cell on the People list (everyone on file)
+// ---------------------------------------------------------------------------
+
+export const CUSTOMER_CELLS = [
+  "fullName",
+  "email",
+  "phone",
+  "emergencyContact",
+  "dietaryHealth",
+  "notes",
+  "isTeam",
+] as const;
+export type CustomerCell = (typeof CUSTOMER_CELLS)[number];
+
+export function isCustomerCell(value: unknown): value is CustomerCell {
+  return (
+    typeof value === "string" &&
+    (CUSTOMER_CELLS as readonly string[]).includes(value)
+  );
+}
+
+export const customerCellSchemas = {
+  fullName: cellSchemas.fullName,
+  email: cellSchemas.email,
+  phone: cellSchemas.phone,
+  emergencyContact: cellSchemas.emergencyContact,
+  dietaryHealth: cellSchemas.dietaryHealth,
+  notes: optionalText(2000),
+  isTeam: cellSchemas.isTeam,
+} satisfies Record<CustomerCell, z.ZodType>;
+
+export const CUSTOMER_COLUMNS: Record<CustomerCell, string> = {
+  fullName: "full_name",
+  email: "email",
+  phone: "phone",
+  emergencyContact: "emergency_contact",
+  dietaryHealth: "dietary_health",
+  notes: "notes",
+  isTeam: "is_team",
+};

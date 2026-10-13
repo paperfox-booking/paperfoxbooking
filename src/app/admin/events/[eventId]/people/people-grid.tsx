@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useMemo,
   useRef,
@@ -436,7 +437,10 @@ export function PeopleGrid({
                   <td className="sticky left-0 z-10 border-r border-cream bg-white px-2 py-2">
                     {text("fullName", "Name", row.fullName, "w-48")}
                     <div className="mt-1 text-sm">
-                      {row.reference}
+                      <Link href={`/admin/bookings/${row.bookingId}`}>
+                        {row.reference}
+                        <span className="sr-only"> for {row.fullName}</span>
+                      </Link>
                       {row.cancelled ? (
                         <span className="ml-2 font-bold">Cancelled</span>
                       ) : null}
