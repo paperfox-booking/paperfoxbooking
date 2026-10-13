@@ -94,6 +94,9 @@ async function EventDetails({
           </Link>
         </Button>
         <Button asChild variant="secondary">
+          <Link href={`/admin/events/${event.id}/email`}>Email people</Link>
+        </Button>
+        <Button asChild variant="secondary">
           <Link href={`/admin/events/${event.id}/check-in`}>Check in</Link>
         </Button>
         <Button asChild variant="secondary">

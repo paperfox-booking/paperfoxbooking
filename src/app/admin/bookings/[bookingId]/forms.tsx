@@ -22,10 +22,12 @@ import {
   recordPaymentAction,
   reinstateBookingAction,
   removePaymentAction,
+  sendEmailAction,
   type CancelState,
   type EmailRecordState,
   type PaymentState,
   type PriceState,
+  type SendEmailState,
   type SimpleState,
 } from "../actions";
 
@@ -283,6 +285,33 @@ export function ReinstateForm({ bookingId }: { bookingId: string }) {
       {state.error ? <Notice tone="error">{state.error}</Notice> : null}
       <Button type="submit" variant="secondary" disabled={pending}>
         Reinstate this booking
+      </Button>
+    </form>
+  );
+}
+
+export function SendEmailForm({
+  bookingId,
+  template,
+  label,
+  disabled,
+}: {
+  bookingId: string;
+  template: string;
+  label: string;
+  disabled: boolean;
+}) {
+  const [state, formAction, pending] = useActionState(
+    (previous: SendEmailState, formData: FormData) =>
+      sendEmailAction(bookingId, previous, formData),
+    {},
+  );
+  return (
+    <form action={formAction} className="space-y-3">
+      {state.error ? <Notice tone="error">{state.error}</Notice> : null}
+      <input type="hidden" name="template" value={template} />
+      <Button type="submit" disabled={pending || disabled}>
+        {pending ? "Sending…" : `Send ${label}`}
       </Button>
     </form>
   );

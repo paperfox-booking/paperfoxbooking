@@ -52,16 +52,23 @@ export type BookingSelect = {
     is_team: boolean;
   } | null;
   payments: { amount_pence: number; deleted_at: string | null }[];
-  email_log: { template: string; sent_on: string | null; created_at: string }[];
+  email_log: {
+    template: string;
+    sent_on: string | null;
+    created_at: string;
+    status: string;
+  }[];
 };
 
 export function toPersonRow(booking: BookingSelect): PersonRow {
   const customer = booking.customer;
-  const latest = [...booking.email_log].sort((a, b) =>
-    `${b.sent_on ?? ""}${b.created_at}`.localeCompare(
-      `${a.sent_on ?? ""}${a.created_at}`,
-    ),
-  )[0];
+  const latest = booking.email_log
+    .filter((email) => email.status !== "failed")
+    .sort((a, b) =>
+      `${b.sent_on ?? ""}${b.created_at}`.localeCompare(
+        `${a.sent_on ?? ""}${a.created_at}`,
+      ),
+    )[0];
   return {
     bookingId: booking.id,
     reference: booking.reference,

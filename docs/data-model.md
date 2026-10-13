@@ -258,6 +258,63 @@ erDiagram
 `tests/db/bookings.test.ts`, `tests/db/costs.test.ts` and
 `tests/db/check-in.test.ts` prove these rules.
 
+## Settings and emails
+
+```mermaid
+erDiagram
+  SETTINGS ||--o{ TERMS_VERSIONS : "every version of the terms"
+  BOOKINGS ||--o{ EMAIL_LOG : "emails"
+
+  SETTINGS {
+    uuid id PK
+    boolean singleton "only ever one row"
+    text business_name
+    text bank_sort_code "12-34-56"
+    text bank_account_number "8 digits"
+    text email_reply_to
+    text email_test_address "when set, every email goes here"
+    boolean send_payment_emails "B2, B3 or thanks after a payment"
+    text terms_text
+    integer terms_version "goes up when the terms change"
+  }
+  TERMS_VERSIONS {
+    integer version PK
+    text terms_text
+    timestamptz created_at
+  }
+  EMAIL_TEMPLATES {
+    uuid id PK
+    text key "B1, B2, B3, thanks, balance_reminder"
+    text subject "with {{placeholders}}"
+    text body
+    boolean attach_booking_details
+    boolean attach_confirmation
+    boolean attach_terms
+  }
+  EMAIL_LOG {
+    uuid id PK
+    text to_email
+    text subject
+    text body "as sent"
+    text_array attachments
+    text status "sent or failed"
+    text error "why it failed"
+    text provider_message_id "Resend's id"
+  }
+```
+
+- **Settings** is one row. Owners and admins can read it (the emails need
+  the bank details); only owners can change it.
+- **Terms:** changing the wording makes a new version in `terms_versions`,
+  kept for good, so we always know what someone was sent. The terms are
+  public, so anyone can read them.
+- **Email wording** is in `email_templates`. Owners and admins change it.
+- **The email log** can't be changed by anyone. The system adds to it
+  through `public.log_email()`, which only owners and admins can use.
+  Emails sent outside the system can still be recorded by hand.
+
+`tests/db/settings-and-emails.test.ts` proves these rules.
+
 ## Helper functions
 
 These live in the `private` schema, which the API doesn't expose:

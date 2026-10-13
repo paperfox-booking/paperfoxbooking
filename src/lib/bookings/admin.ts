@@ -31,7 +31,7 @@ const BOOKING_COLUMNS = `
   price_note, notes, payment_notes, cancelled_at, checked_in_at,
   customer:customers(id, full_name, email, phone, emergency_contact, dietary_health, is_team),
   payments(amount_pence, deleted_at),
-  email_log(template, sent_on, created_at)
+  email_log(template, sent_on, created_at, status)
 `;
 
 export async function listEventPeople(eventId: string): Promise<PersonRow[]> {
@@ -134,7 +134,13 @@ export interface BookingDetail {
   emails: {
     id: string;
     template: string;
+    subject: string;
+    toEmail: string;
+    attachments: string[];
+    status: string;
+    error: string;
     sentOn: string | null;
+    sentAt: string | null;
     note: string;
     outsideSystem: boolean;
     createdBy: string | null;
@@ -156,7 +162,7 @@ export async function getBookingDetail(
        event:events(id, title, starts_at, ends_at, balance_due_on),
        customer:customers(id, full_name, email, phone),
        payments(id, amount_pence, method, received_on, note, recorded_by, deleted_at, delete_reason, created_at),
-       email_log(id, template, sent_on, note, outside_system, created_by, created_at)`,
+       email_log(id, template, subject, to_email, attachments, status, error, sent_on, sent_at, note, outside_system, created_by, created_at)`,
     )
     .eq("id", bookingId)
     .maybeSingle();
@@ -243,7 +249,13 @@ export async function getBookingDetail(
       .map((email) => ({
         id: email.id,
         template: email.template,
+        subject: email.subject,
+        toEmail: email.to_email,
+        attachments: email.attachments,
+        status: email.status,
+        error: email.error,
         sentOn: email.sent_on,
+        sentAt: email.sent_at,
         note: email.note,
         outsideSystem: email.outside_system,
         createdBy: email.created_by,

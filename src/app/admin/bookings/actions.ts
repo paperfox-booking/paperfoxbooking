@@ -4,6 +4,15 @@ import { redirect } from "next/navigation";
 import { staffWithPermission } from "@/lib/auth/session";
 import { getPersonRow, type PersonRow } from "@/lib/bookings/admin";
 import { toUkDateInput } from "@/lib/dates";
+import {
+  isTemplateKey,
+  loadEmailRecipient,
+  sendBookingEmail,
+} from "@/lib/email/booking-emails";
+import {
+  emailAfterRecordingPayment,
+  paymentStateOf,
+} from "@/lib/email/payment-emails";
 import { friendlyDatabaseError } from "@/lib/supabase/errors";
 import type { TablesUpdate } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -74,7 +83,8 @@ async function optionPrice(
 // ---------------------------------------------------------------------------
 
 export type CellResult =
-  { ok: true; row: PersonRow } | { ok: false; error: string };
+  | { ok: true; row: PersonRow; emailNote?: string }
+  | { ok: false; error: string };
 
 /** Saves one cell of the spreadsheet screen and returns the updated row. */
 export async function saveCellAction(
@@ -252,6 +262,8 @@ export async function addPersonAction(
 export type PaymentState = FormState<PaymentField> & {
   done?: boolean;
   row?: PersonRow;
+  /** What happened about the email that follows a payment. */
+  emailNote?: string;
 };
 
 /** Records money received for a booking. */
@@ -273,6 +285,7 @@ export async function recordPaymentAction(
   }
 
   const supabase = await createSupabaseServerClient();
+  const before = await loadEmailRecipient(supabase, bookingId);
   const { error } = await supabase.from("payments").insert({
     booking_id: bookingId,
     amount_pence: parsed.data.amount,
@@ -281,12 +294,22 @@ export async function recordPaymentAction(
     note: parsed.data.note,
   });
   if (error) return { values, error: friendlyDatabaseError(error) };
+  const email = await emailAfterRecordingPayment(
+    supabase,
+    bookingId,
+    before ? paymentStateOf(before) : null,
+    { amountPence: parsed.data.amount, receivedOn: parsed.data.receivedOn },
+  );
 
   if (formData.get("returnTo") === "booking") {
-    redirect(`/admin/bookings/${bookingId}?notice=payment-recorded`);
+    redirect(
+      `/admin/bookings/${bookingId}?notice=payment-recorded${
+        email ? `&email=${email.template}.${email.outcome}` : ""
+      }`,
+    );
   }
   const row = await getPersonRow(bookingId);
-  return { done: true, row: row ?? undefined };
+  return { done: true, row: row ?? undefined, emailNote: email?.text };
 }
 
 // ---------------------------------------------------------------------------
@@ -481,6 +504,7 @@ export async function quickPaymentAction(
     };
   }
   const supabase = await createSupabaseServerClient();
+  const before = await loadEmailRecipient(supabase, bookingId);
   const { error } = await supabase.from("payments").insert({
     booking_id: bookingId,
     amount_pence: parsed.data.amount,
@@ -488,7 +512,38 @@ export async function quickPaymentAction(
     method: "bank_transfer",
   });
   if (error) return { ok: false, error: friendlyDatabaseError(error) };
+  const email = await emailAfterRecordingPayment(
+    supabase,
+    bookingId,
+    before ? paymentStateOf(before) : null,
+    { amountPence: parsed.data.amount, receivedOn: parsed.data.receivedOn },
+  );
   const row = await getPersonRow(bookingId);
   if (!row) return { ok: false, error: "That booking couldn't be found." };
-  return { ok: true, row };
+  return { ok: true, row, emailNote: email?.text };
+}
+
+// ---------------------------------------------------------------------------
+// Sending an email from a booking's page
+// ---------------------------------------------------------------------------
+
+export type SendEmailState = { error?: string };
+
+/** Sends one of the standard emails to the person on this booking. */
+export async function sendEmailAction(
+  bookingId: string,
+  _previous: SendEmailState,
+  formData: FormData,
+): Promise<SendEmailState> {
+  if (!(await staffWithPermission("attendees.message"))) {
+    return { error: "You need to be an owner or admin to send emails." };
+  }
+  const template = formData.get("template");
+  if (!isTemplateKey(template)) {
+    return { error: "Choose which email to send." };
+  }
+  const supabase = await createSupabaseServerClient();
+  const outcome = await sendBookingEmail(supabase, bookingId, { template });
+  if (!outcome.sent) return { error: outcome.error };
+  redirect(`/admin/bookings/${bookingId}?notice=email-sent`);
 }

@@ -50,6 +50,10 @@ test.describe("a booking's own page @supabase", () => {
     await page.getByRole("button", { name: "Record payment" }).click();
     await expect(visibleText(page, "Payment recorded.")).toBeVisible();
     await expect(visibleText(page, "Deposit paid")).toBeVisible();
+    // Paying the deposit sends B2 by itself.
+    await expect(
+      visibleText(page, "B2: deposit received has been emailed to them."),
+    ).toBeVisible();
 
     // Record another £60 by mistake, then remove it.
     await page.getByLabel("Amount received").fill("60");
@@ -101,7 +105,9 @@ test.describe("a booking's own page @supabase", () => {
     await page.getByLabel("Which email").selectOption("B2");
     await page.getByRole("button", { name: "Record email" }).click();
     await expect(visibleText(page, "Email recorded.")).toBeVisible();
-    await expect(visibleText(page, /^B2: deposit received/)).toBeVisible();
+    await expect(
+      visibleText(page, /^Sent outside the system, recorded by/),
+    ).toBeVisible();
 
     // Cancel, then reinstate.
     await openDetails(page, "Cancel this booking");

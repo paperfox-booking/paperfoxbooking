@@ -38,6 +38,8 @@ jobs:
     timeout-minutes: 15
     env:
       NEXT_PUBLIC_SITE_URL: http://localhost:3100
+      # Emails go to the local test mailbox, never to anyone real.
+      EMAIL_SEND_TO_MAILPIT: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

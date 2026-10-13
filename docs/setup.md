@@ -98,6 +98,36 @@ go through Resend, from Paper Fox's own address.
    sending emails** to `100` an hour. (Resend's free plan sends up to 100 a
    day and 3,000 a month, which is plenty for sign-in codes.)
 
+### Sending the booking emails (B1, B2, B3 and the rest)
+
+The booking emails go through Resend too, but from the site itself, so the
+site needs its own key. Until it has one, nothing is sent: the team can
+change and preview every email, and the admin area says sending is off.
+
+1. Finish steps 1 to 3 above, so `paper-fox.co.uk` is verified in Resend.
+2. In Resend, **API Keys → Create API key**: name it `Booking emails`,
+   permission **Sending access**, domain `paper-fox.co.uk`, and copy it.
+3. In Vercel, **Project → Settings → Environment Variables**, add these for
+   the **Production** environment only (not Preview), then redeploy:
+
+   | Name             | Value                                  |
+   | ---------------- | -------------------------------------- |
+   | `RESEND_API_KEY` | the key from step 2                    |
+   | `EMAIL_FROM`     | `Paper Fox <bookings@paper-fox.co.uk>` |
+
+4. **Try it safely first.** Sign in, go to **Settings**, put your own email
+   address in **Test mode: send every email to this address instead**, and
+   save. Every email now comes to you, marked "[Test: for …]", whoever it's
+   for. Record a payment, send a B1 from a booking's page, and check what
+   arrives (including the PDFs).
+5. When you're happy, empty the test mode box and save. From then on, emails
+   go to customers.
+
+Resend's free plan sends up to 100 emails a day and 3,000 a month. Emailing
+all 110 people on an event at once needs more than that in one day, so
+before sending to everyone, upgrade to Resend's **Pro** plan (50,000 a
+month), or send in two batches on different days.
+
 ### Later
 
 - **Sentry**, for error reports.
@@ -168,6 +198,8 @@ Environment Variables**.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → **Project Settings → API keys** → `anon` `public` key                                     |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Supabase → **Project Settings → API keys** → `service_role` key. Secret: server only. Not needed yet |
 | `DATABASE_URL`                  | Supabase → **Connect** → connection string. Only for running migrations from a computer              |
+| `RESEND_API_KEY`                | Resend → **API Keys** (see "Sending the booking emails"). Secret: server only. Production only       |
+| `EMAIL_FROM`                    | `Paper Fox <bookings@paper-fox.co.uk>`                                                               |
 
 ## 4. Running it on your computer
 

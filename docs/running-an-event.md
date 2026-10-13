@@ -207,8 +207,84 @@ still owes, to collect on the day; door staff don't see money.
 
 Tip: add the site to your phone's home screen, so it opens like an app.
 
+## Emails
+
+Emails go out from the system, branded and with each person's own details
+filled in. Until Resend is set up (George: `docs/setup.md`), you can preview
+every email but nothing is sent.
+
+### After a payment
+
+When you record a payment (the Pay box, **Add**, or a booking's page), the
+right email goes automatically:
+
+- **B2: deposit received** when their deposit is now paid, with the
+  confirmation PDF attached;
+- **B3: paid in full** when they've now paid everything, also with the
+  confirmation PDF;
+- **Thanks for your payment** for anything else, such as part of the balance.
+
+The message under the list says what was sent. An owner can switch this off
+in **Settings**.
+
+### To one person
+
+Open their booking, choose the email under **Send an email**, then
+**Preview**. Check it (the PDFs open from the preview), then send it.
+**Emails sent** lists everything sent, and anything that couldn't be sent,
+with the reason.
+
+### To everyone on an event
+
+Open the event and choose **Email people**:
+
+1. Choose a standard email, such as the balance reminder, or write your own.
+2. Choose who gets it: everyone, everyone who owes money, only overdue, only
+   people who haven't paid their deposit, or only people who haven't had
+   this email yet. The team's free places are left out unless you tick them
+   in.
+3. **Preview the email**, as the first person on the list will get it.
+4. Tick **I've checked the preview** and send. Keep the page open until it
+   says it's finished.
+
+### Changing what the emails say
+
+**Emails** in the menu lists B1, B2, B3, the thank you and the balance
+reminder. Choose one to change its subject, wording and attachments; the
+preview beside it shows a real booking. Words in double curly brackets, like
+`{{first_name}}` or `{{balance_due_on}}`, fill in each person's details: the
+full list is under the wording box. The sign-off ("Regards, Nichola & Morag")
+and social links are added for you.
+
+### The PDFs
+
+Made from each event's own details, so they're always right for that event:
+
+- **Booking details:** prices and deposits, how to pay (with their booking
+  reference to use), key dates, the venue and hotel;
+- **Confirmation:** their place, what's included, the event's Facebook
+  group, the venue and hotel;
+- **Terms and conditions:** the current version from Settings.
+
+Keep each event's **Facebook group**, **what's included** and **hotel
+information** up to date under the event's **Change details**, as the PDFs
+use them.
+
+## Settings (owners only)
+
+**Settings** in the menu holds:
+
+- the **bank details** that go in the emails and PDFs;
+- who replies go to, and who emails are signed by;
+- whether payment emails go automatically;
+- **test mode**: put your own email address here and every email comes to you
+  instead of customers, so you can try things safely;
+- the business details in every email's footer;
+- the **terms and conditions**. Changing them makes a new version, and every
+  version is kept.
+
 ## Coming next
 
-Sending the B1, B2 and B3 emails from the system (with balance reminders and
-chasers) comes next, once the Resend email set-up in `docs/setup.md` is
-done. After that: online booking with a deposit, and the waiting list.
+Bringing in the March 2027 spreadsheet on the live site, online booking with
+a deposit, and the waiting list. The seating plan follows once the room maps
+arrive.
