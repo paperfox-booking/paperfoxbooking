@@ -53,16 +53,25 @@ async function EmailPeople({
   const sent = await allRows((from, to) =>
     supabase
       .from("email_log")
-      .select("booking_id, template, bookings!inner(event_id)")
+      .select("booking_id, customer_id, template, bookings!inner(event_id)")
       .eq("bookings.event_id", eventId)
       // Failed sends, and test sends to the test address, don't count.
       .not("status", "in", "(failed,test)")
       .order("id")
       .range(from, to),
   );
+  // Only emails to the person who has the place now count, not to someone
+  // who had it before it was passed on.
+  const holder = new Map(rows.map((row) => [row.bookingId, row.customerId]));
   const had = new Map<string, Set<string>>();
   for (const email of sent) {
     if (!email.booking_id) continue;
+    if (
+      email.customer_id &&
+      email.customer_id !== holder.get(email.booking_id)
+    ) {
+      continue;
+    }
     const set = had.get(email.booking_id) ?? new Set<string>();
     set.add(email.template);
     had.set(email.booking_id, set);

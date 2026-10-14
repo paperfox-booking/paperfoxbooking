@@ -1,4 +1,5 @@
 import "server-only";
+import { allRows } from "@/lib/supabase/all-rows";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getEvent } from "@/lib/events/admin";
 import type { AuditEntry } from "./history";
@@ -32,7 +33,7 @@ const BOOKING_COLUMNS = `
   customer:customers(id, full_name, email, phone, emergency_contact, dietary_health, is_team),
   payments(amount_pence, deleted_at),
   refunds(amount_pence, deleted_at),
-  email_log(template, sent_on, created_at, status)
+  email_log(template, sent_on, created_at, status, customer_id)
 `;
 
 export async function listEventPeople(eventId: string): Promise<PersonRow[]> {
@@ -86,13 +87,15 @@ export interface KnownPerson {
 /** Everyone on file, for "someone who's been before" suggestions. */
 export async function listKnownPeople(): Promise<KnownPerson[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("customers")
-    .select("id, full_name, email")
-    .is("deleted_at", null)
-    .order("full_name")
-    .limit(5000);
-  if (error) throw new Error(`Couldn't load people: ${error.message}`);
+  const data = await allRows((from, to) =>
+    supabase
+      .from("customers")
+      .select("id, full_name, email")
+      .is("deleted_at", null)
+      .order("full_name")
+      .order("id")
+      .range(from, to),
+  );
   return data.map((person) => ({
     id: person.id,
     fullName: person.full_name,
@@ -393,12 +396,14 @@ const DIRECTORY_COLUMNS = `
 /** Everyone on file, the team first and then by name. */
 export async function listDirectory(): Promise<DirectoryPerson[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("customers")
-    .select(DIRECTORY_COLUMNS)
-    .is("deleted_at", null)
-    .limit(5000);
-  if (error) throw new Error(`Couldn't load people: ${error.message}`);
+  const data = await allRows((from, to) =>
+    supabase
+      .from("customers")
+      .select(DIRECTORY_COLUMNS)
+      .is("deleted_at", null)
+      .order("id")
+      .range(from, to),
+  );
   return data.map(toDirectoryPerson).sort(comparePeople);
 }
 

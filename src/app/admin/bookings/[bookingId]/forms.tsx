@@ -402,10 +402,11 @@ export function PassPlaceForm({
 }: {
   bookingId: string;
   currentName: string;
-  knownPeople: { fullName: string; email: string }[];
+  knownPeople: { id: string; fullName: string; email: string }[];
 }) {
   const name = useRef<HTMLInputElement>(null);
   const email = useRef<HTMLInputElement>(null);
+  const chosen = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(
     (previous: PassPlaceState, formData: FormData) =>
       passPlaceAction(bookingId, previous, formData),
@@ -413,16 +414,30 @@ export function PassPlaceForm({
   );
   const errors = state.fieldErrors ?? {};
 
+  // Choosing someone who's been before gives their place to their own
+  // record (with their details), even if it has no email address.
   function pickKnownPerson(value: string) {
     const match = knownPeople.find((person) => suggestion(person) === value);
-    if (match && name.current && email.current) {
+    if (match && name.current && email.current && chosen.current) {
       name.current.value = match.fullName;
       email.current.value = match.email;
+      chosen.current.value = match.id;
+    } else if (chosen.current) {
+      const current = knownPeople.find(
+        (person) => person.id === chosen.current?.value,
+      );
+      if (current?.fullName !== value) chosen.current.value = "";
     }
   }
 
   return (
     <form action={formAction} className="space-y-4" noValidate>
+      <input
+        ref={chosen}
+        type="hidden"
+        name="customerId"
+        defaultValue={state.values?.customerId ?? ""}
+      />
       {state.error ? <Notice tone="error">{state.error}</Notice> : null}
       <p>
         For when {currentName} can&apos;t come and you&apos;ve approved someone

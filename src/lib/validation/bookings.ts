@@ -108,11 +108,18 @@ export const addPersonSchema = z.object({
   roomId: optionalId,
 });
 
-export const PASS_PLACE_FIELDS = ["fullName", "email", "reason"] as const;
+export const PASS_PLACE_FIELDS = [
+  "customerId",
+  "fullName",
+  "email",
+  "reason",
+] as const;
 export type PassPlaceField = (typeof PASS_PLACE_FIELDS)[number];
 
 /** Passing a place to someone else, with Paper Fox's approval. */
 export const passPlaceSchema = z.object({
+  /** Set when someone who's been before was chosen from the list. */
+  customerId: optionalId,
   fullName: requiredText(200, "Enter the name of the person taking the place"),
   email: optionalEmail,
   reason: requiredText(

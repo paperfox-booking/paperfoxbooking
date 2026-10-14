@@ -140,15 +140,93 @@ describe("refunds", () => {
     });
   });
 
+  it("doesn't deadlock when two refunds lock the booking at the same moment", async () => {
+    const setup = await pool.connect();
+    const eventId = randomUUID();
+    const customerId = randomUUID();
+    let bookingId = "";
+    let venueId = "";
+    try {
+      const venue = await setup.query<{ id: string }>(
+        "insert into public.venues (name) values ('Zz deadlock test venue') returning id",
+      );
+      venueId = venue.rows[0]!.id;
+      await setup.query(
+        `insert into public.events (id, title, venue_id, starts_at, ends_at, balance_due_on, capacity)
+         values ($1, 'Deadlock test', $2, '2043-03-13T09:00:00Z', '2043-03-15T17:00:00Z', '2043-02-01', 5)`,
+        [eventId, venue.rows[0]!.id],
+      );
+      await setup.query(
+        "insert into public.customers (id, full_name) values ($1, 'Refunded twice')",
+        [customerId],
+      );
+      const booking = await setup.query<{ id: string }>(
+        "insert into public.bookings (event_id, customer_id, price_pence) values ($1, $2, 19500) returning id",
+        [eventId, customerId],
+      );
+      bookingId = booking.rows[0]!.id;
+      await setup.query(
+        "insert into public.payments (booking_id, amount_pence, received_on) values ($1, 19500, '2026-10-01')",
+        [bookingId],
+      );
+
+      const [first, second] = [await pool.connect(), await pool.connect()];
+      try {
+        await first.query("begin");
+        await second.query("begin");
+        // Each refund's foreign key check holds a key share lock on the
+        // booking: take both first, as two refunds at once would.
+        const share =
+          "select 1 from public.bookings where id = $1 for key share";
+        await first.query(share, [bookingId]);
+        await second.query(share, [bookingId]);
+        await first.query(REFUND, [bookingId, 13500]);
+        const secondAttempt = second
+          .query(REFUND, [bookingId, 13500])
+          .then(() => "refunded")
+          .catch((error: Error) => error.message);
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        await first.query("commit");
+        expect(await secondAttempt).toMatch(/The most you can refund is £60\./);
+        await second.query("rollback");
+      } finally {
+        first.release();
+        second.release();
+      }
+    } finally {
+      if (bookingId) {
+        await setup.query("delete from public.refunds where booking_id = $1", [
+          bookingId,
+        ]);
+        await setup.query("delete from public.payments where booking_id = $1", [
+          bookingId,
+        ]);
+      }
+      await setup.query("delete from public.bookings where event_id = $1", [
+        eventId,
+      ]);
+      await setup.query("delete from public.customers where id = $1", [
+        customerId,
+      ]);
+      await setup.query("delete from public.events where id = $1", [eventId]);
+      if (venueId) {
+        await setup.query("delete from public.venues where id = $1", [venueId]);
+      }
+      setup.release();
+    }
+  });
+
   it("gives exactly one of two refunds of the last money at the same moment", async () => {
     const setup = await pool.connect();
     const eventId = randomUUID();
     const customerId = randomUUID();
     let bookingId = "";
+    let venueId = "";
     try {
       const venue = await setup.query<{ id: string }>(
-        "insert into public.venues (name) values ('Refund race venue') returning id",
+        "insert into public.venues (name) values ('Zz refund race test venue') returning id",
       );
+      venueId = venue.rows[0]!.id;
       await setup.query(
         `insert into public.events (id, title, venue_id, starts_at, ends_at, balance_due_on, capacity)
          values ($1, 'Refund race', $2, '2043-03-13T09:00:00Z', '2043-03-15T17:00:00Z', '2043-02-01', 5)`,
@@ -208,6 +286,9 @@ describe("refunds", () => {
         customerId,
       ]);
       await setup.query("delete from public.events where id = $1", [eventId]);
+      if (venueId) {
+        await setup.query("delete from public.venues where id = $1", [venueId]);
+      }
       setup.release();
     }
   });

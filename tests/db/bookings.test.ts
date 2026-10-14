@@ -279,6 +279,23 @@ describe("who can see bookings and payments", () => {
     });
   });
 
+  it("links a person the team adds to an account with the same confirmed email", async () => {
+    await inTransaction(async (tx) => {
+      const user = await tx.createUser("Signed up first");
+      await tx.query(
+        "update auth.users set email_confirmed_at = now() where id = $1",
+        [user.id],
+      );
+      const unconfirmed = await tx.createUser("Not confirmed");
+      await tx.as(await tx.createStaff("admin"));
+      const { rows } = await tx.query<{ user_id: string | null }>(
+        "insert into public.customers (full_name, email) values ('Signed up first', $1), ('Not confirmed', $2) returning user_id",
+        [user.email, unconfirmed.email],
+      );
+      expect(rows.map((row) => row.user_id)).toEqual([user.id, null]);
+    });
+  });
+
   it("lets door staff see bookings and people, but not payments, emails or the audit log", async () => {
     await inTransaction(async (tx) => {
       const event = await tx.createEvent();
@@ -656,6 +673,34 @@ describe("passing a place on", () => {
         from_id: first,
         to_id: second,
       });
+    });
+  });
+
+  it("takes the new person off the event's waiting list", async () => {
+    await inTransaction(async (tx) => {
+      const event = await tx.createEvent();
+      const first = await tx.createCustomer("Jo First");
+      const second = await tx.createCustomer("Ann Second");
+      const booking = await tx.createBooking(event, first);
+      await tx.query(
+        "insert into public.waitlist (event_id, customer_id) values ($1, $2)",
+        [event, second],
+      );
+      await tx.as(await tx.createStaff("admin"));
+      await tx.query("select public.pass_place($1, $2, 'Approved')", [
+        booking.id,
+        second,
+      ]);
+      const { rows } = await tx.query(
+        "select status, notes from public.waitlist where event_id = $1 and customer_id = $2",
+        [event, second],
+      );
+      expect(rows).toEqual([
+        {
+          status: "removed",
+          notes: "Given a place passed on from Jo First.",
+        },
+      ]);
     });
   });
 

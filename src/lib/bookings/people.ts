@@ -59,14 +59,21 @@ export type BookingSelect = {
     sent_on: string | null;
     created_at: string;
     status: string;
+    customer_id: string | null;
   }[];
 };
 
 export function toPersonRow(booking: BookingSelect): PersonRow {
   const customer = booking.customer;
   const latest = booking.email_log
-    // Failed sends, and test sends to the test address, don't count.
-    .filter((email) => email.status !== "failed" && email.status !== "test")
+    // Failed sends, and test sends to the test address, don't count; nor do
+    // emails to someone who had this place before it was passed on.
+    .filter(
+      (email) =>
+        email.status !== "failed" &&
+        email.status !== "test" &&
+        (email.customer_id === null || email.customer_id === customer?.id),
+    )
     .sort((a, b) =>
       `${b.sent_on ?? ""}${b.created_at}`.localeCompare(
         `${a.sent_on ?? ""}${a.created_at}`,

@@ -261,7 +261,11 @@ erDiagram
 - **`public.pass_place(booking_id, new_customer_id, reason)`** passes a
   place to someone else (owners and admins only): the booking, with its
   reference and payments, moves to them in one step, the reason is added to
-  its notes, and someone already booked on the event is refused.
+  its notes, someone already booked on the event is refused, and the new
+  person comes off the event's waiting list.
+- **Linking accounts:** a person's record is linked to a sign-in account
+  with the same email address once that address is confirmed, whether the
+  account or the record came first.
 - **`public.set_checked_in(booking_id, arrived)`** marks someone as arrived,
   or undoes it. Any team member can, door staff included, but only for a
   booking that isn't cancelled. Pressing Arrived twice keeps the first time.

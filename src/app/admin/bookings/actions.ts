@@ -388,11 +388,27 @@ export async function passPlaceAction(
     return { values, fieldErrors: fieldErrorsFrom(parsed.error) };
   }
   const supabase = await createSupabaseServerClient();
-  const found = await findOrCreateCustomer(
-    supabase,
-    parsed.data.fullName,
-    parsed.data.email,
-  );
+  // Check the booking first, so nobody new is added for a place that can't
+  // be passed on.
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("cancelled_at")
+    .eq("id", bookingId)
+    .maybeSingle();
+  if (!booking) return { values, error: "That booking couldn't be found." };
+  if (booking.cancelled_at) {
+    return {
+      values,
+      error: "This booking is cancelled, so its place can't be passed on.",
+    };
+  }
+  const found = parsed.data.customerId
+    ? { id: parsed.data.customerId }
+    : await findOrCreateCustomer(
+        supabase,
+        parsed.data.fullName,
+        parsed.data.email,
+      );
   if ("error" in found) return { values, error: found.error };
   const { error } = await supabase.rpc("pass_place", {
     booking_id: bookingId,

@@ -20,6 +20,13 @@ prove them (`tests/db/`).
 - **Customers** will sign in with a code emailed to them, with no password.
   They only ever see their own bookings, and only once their email address
   is confirmed (keep **Confirm email** on in Supabase).
+- **To decide before customers can sign in:** a signed-in customer can read
+  every detail of their own booking's payments and refunds through the
+  database's API, including the team's notes and refund reasons (their
+  account page only shows amounts and dates). After a place is passed on,
+  that includes the notes on payments the first person made. If that
+  matters, customers should get their payments through a function that
+  leaves the notes out, as event details now do.
 - **Private event details** (the Facebook group link, joining details and
   class kits text) are only given to the team and to people with a booking
   on that event, not to visitors or other signed-in accounts.

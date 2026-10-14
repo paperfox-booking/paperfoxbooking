@@ -600,6 +600,7 @@ async function Booking({
                   knownPeople={(await listKnownPeople())
                     .filter((person) => person.id !== booking.customer.id)
                     .map((person) => ({
+                      id: person.id,
                       fullName: person.fullName,
                       email: person.email,
                     }))}

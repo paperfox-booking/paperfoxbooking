@@ -27,15 +27,23 @@ async function Team() {
     .select("user_id, role, created_at")
     .order("created_at");
   const ids = (staff ?? []).map((member) => member.user_id);
-  const { data: profiles } = ids.length
-    ? await supabase
-        .from("profiles")
-        .select("id, email, full_name")
-        .in("id", ids)
-    : { data: [] };
-  const byId = new Map(
-    (profiles ?? []).map((profile) => [profile.id, profile]),
-  );
+  // In batches, so a long list of ids never makes the request too long.
+  const batches: string[][] = [];
+  for (let start = 0; start < ids.length; start += 100) {
+    batches.push(ids.slice(start, start + 100));
+  }
+  const profiles = (
+    await Promise.all(
+      batches.map(async (batch) => {
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, email, full_name")
+          .in("id", batch);
+        return data ?? [];
+      }),
+    )
+  ).flat();
+  const byId = new Map(profiles.map((profile) => [profile.id, profile]));
 
   return (
     <div className="max-w-3xl space-y-6">
