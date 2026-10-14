@@ -4,15 +4,8 @@ import { redirect } from "next/navigation";
 import { staffWithPermission } from "@/lib/auth/session";
 import { getPersonRow, type PersonRow } from "@/lib/bookings/admin";
 import { toUkDateInput } from "@/lib/dates";
-import {
-  isTemplateKey,
-  loadEmailRecipient,
-  sendBookingEmail,
-} from "@/lib/email/booking-emails";
-import {
-  emailAfterRecordingPayment,
-  paymentStateOf,
-} from "@/lib/email/payment-emails";
+import { isTemplateKey, sendBookingEmail } from "@/lib/email/booking-emails";
+import { emailAfterRecordingPayment } from "@/lib/email/payment-emails";
 import { friendlyDatabaseError } from "@/lib/supabase/errors";
 import type { TablesUpdate } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -285,21 +278,23 @@ export async function recordPaymentAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const before = await loadEmailRecipient(supabase, bookingId);
-  const { error } = await supabase.from("payments").insert({
-    booking_id: bookingId,
-    amount_pence: parsed.data.amount,
-    received_on: parsed.data.receivedOn,
-    method: parsed.data.method,
-    note: parsed.data.note,
-  });
+  const { data: payment, error } = await supabase
+    .from("payments")
+    .insert({
+      booking_id: bookingId,
+      amount_pence: parsed.data.amount,
+      received_on: parsed.data.receivedOn,
+      method: parsed.data.method,
+      note: parsed.data.note,
+    })
+    .select("id")
+    .single();
   if (error) return { values, error: friendlyDatabaseError(error) };
-  const email = await emailAfterRecordingPayment(
-    supabase,
-    bookingId,
-    before ? paymentStateOf(before) : null,
-    { amountPence: parsed.data.amount, receivedOn: parsed.data.receivedOn },
-  );
+  const email = await emailAfterRecordingPayment(supabase, bookingId, {
+    id: payment.id,
+    amountPence: parsed.data.amount,
+    receivedOn: parsed.data.receivedOn,
+  });
 
   if (formData.get("returnTo") === "booking") {
     redirect(
@@ -504,20 +499,22 @@ export async function quickPaymentAction(
     };
   }
   const supabase = await createSupabaseServerClient();
-  const before = await loadEmailRecipient(supabase, bookingId);
-  const { error } = await supabase.from("payments").insert({
-    booking_id: bookingId,
-    amount_pence: parsed.data.amount,
-    received_on: parsed.data.receivedOn,
-    method: "bank_transfer",
-  });
+  const { data: payment, error } = await supabase
+    .from("payments")
+    .insert({
+      booking_id: bookingId,
+      amount_pence: parsed.data.amount,
+      received_on: parsed.data.receivedOn,
+      method: "bank_transfer",
+    })
+    .select("id")
+    .single();
   if (error) return { ok: false, error: friendlyDatabaseError(error) };
-  const email = await emailAfterRecordingPayment(
-    supabase,
-    bookingId,
-    before ? paymentStateOf(before) : null,
-    { amountPence: parsed.data.amount, receivedOn: parsed.data.receivedOn },
-  );
+  const email = await emailAfterRecordingPayment(supabase, bookingId, {
+    id: payment.id,
+    amountPence: parsed.data.amount,
+    receivedOn: parsed.data.receivedOn,
+  });
   const row = await getPersonRow(bookingId);
   if (!row) return { ok: false, error: "That booking couldn't be found." };
   return { ok: true, row, emailNote: email?.text };

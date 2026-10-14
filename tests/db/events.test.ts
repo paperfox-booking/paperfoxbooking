@@ -394,9 +394,10 @@ describe("copying an event", () => {
         facebook_group_url: null,
         copied_from_event_id: march,
         created_by: admin.id,
-        // A starting point for the new event's emails.
-        joining_info: "Arrive from 3pm",
-        class_kits_info: "Two kits",
+        // Each event's joining details and class kits are its own, so last
+        // time's dates can't go out by mistake.
+        joining_info: "",
+        class_kits_info: "",
       });
 
       const options = await tx.query(

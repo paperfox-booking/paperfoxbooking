@@ -155,11 +155,16 @@ function findColumns(header: string[]): Columns | null {
   const description = names
     .map((name, index) => ({ name, index }))
     .filter(({ name }) =>
-      /description|reference|details|narrative|memo|payee|name|transaction|particulars|type/.test(
+      /description|reference|details|narrative|memo|payee|name|transaction|particulars|type|counter ?party/.test(
         name,
       ),
     )
-    .filter(({ name }) => !/date|balance|amount/.test(name))
+    // Not the date or money, nor Paper Fox's own account (NatWest puts the
+    // account name on every line).
+    .filter(
+      ({ name }) =>
+        !/date|balance|amount|account name|account number|sort code/.test(name),
+    )
     .map(({ index }) => index);
   if (date < 0 || (paidIn < 0 && amount < 0) || description.length === 0) {
     return null;
@@ -177,6 +182,8 @@ export function readStatement(text: string): StatementLine[] {
   const rows = parseCsv(text);
   const headerIndex = rows.findIndex((cells) => findColumns(cells) !== null);
   if (headerIndex < 0) {
+    const headerless = readHeaderless(rows);
+    if (headerless.length) return headerless;
     throw new StatementError(
       "This file doesn't look like a bank statement. It needs columns for the date, the description and the amount (or money paid in). Download the statement from online banking as a CSV file and try again.",
     );
@@ -204,4 +211,44 @@ export function readStatement(text: string): StatementLine[] {
     });
   }
   return lines;
+}
+
+/**
+ * Some banks (HSBC, for example) export just date, description and amount,
+ * with no header row. Read files of that shape too.
+ */
+function readHeaderless(rows: string[][]): StatementLine[] {
+  const looksRight = rows.some(
+    (cells) =>
+      cells.length >= 3 &&
+      parseStatementDate(cells[0] ?? "") !== null &&
+      parseStatementAmount(cells[2] ?? "") !== null,
+  );
+  if (!looksRight) return [];
+  const lines: StatementLine[] = [];
+  for (const [index, cells] of rows.entries()) {
+    const date = parseStatementDate(cells[0] ?? "");
+    const amount = parseStatementAmount(cells[2] ?? "");
+    if (!date || amount === null || amount <= 0) continue;
+    lines.push({
+      row: index + 1,
+      date,
+      description: (cells[1] ?? "").trim().replace(/\s+/g, " "),
+      amountPence: amount,
+    });
+  }
+  return lines;
+}
+
+/**
+ * Turns the file's bytes into text. Most banks use UTF-8; some (Nationwide,
+ * for example) use the older Windows encoding, where "£" would otherwise be
+ * misread and every amount lost.
+ */
+export function decodeStatement(bytes: ArrayBuffer): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
 }

@@ -141,8 +141,12 @@ Choose **Bank statement** in the menu:
    date it arrived, with the statement's description as its note, and sends
    its email (B2, B3 or a thank you).
 
-Uploading the same statement twice is safe: payments already recorded from a
-statement are flagged and skipped.
+**Payments already in the system aren't ticked.** If someone already has a
+payment of the same amount within a week of the bank's date (for example,
+typed in with the Pay box), or the spreadsheet total brought in for them may
+already include it, the line says so and isn't ticked. Only tick it if
+you're sure it's a different payment. The same amount on the same day is
+never recorded twice, so uploading a statement again is safe.
 
 ## A booking's own page
 
@@ -297,8 +301,9 @@ reminder, class kits (about 4 weeks before) and joining details (a few days
 before). What the class kits and joining details emails say about each
 event comes from that event's **Class kits** and **Joining details** boxes,
 under **Change details**: fill those in for each event, and the emails
-never need editing between events. Copying an event copies them as a
-starting point. Choose one to change its subject, wording and attachments; the
+never need editing between events. Copying an event leaves them empty (like
+the Facebook group), so last time's dates can't go out by mistake: the
+preview warns while they're empty. Choose one to change its subject, wording and attachments; the
 preview beside it shows a real booking. Words in double curly brackets, like
 `{{first_name}}` or `{{balance_due_on}}`, fill in each person's details: the
 full list is under the wording box. The sign-off ("Regards, Nichola & Morag")

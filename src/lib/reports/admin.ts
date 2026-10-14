@@ -1,5 +1,6 @@
 import "server-only";
 import { sumPayments } from "@/lib/bookings/money";
+import { allRows } from "@/lib/supabase/all-rows";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { PaymentReportRow } from "./payments";
 import { profitFor, type Profit } from "./profit";
@@ -180,17 +181,20 @@ export async function listPaymentsBetween(
   to: string,
 ): Promise<PaymentReportRow[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("payments")
-    .select(
-      `id, received_on, amount_pence, method, note,
-       booking:bookings(id, reference, customer:customers(full_name), event:events(title))`,
-    )
-    .is("deleted_at", null)
-    .gte("received_on", from)
-    .lte("received_on", to)
-    .order("received_on");
-  if (error) throw new Error(`Couldn't load payments: ${error.message}`);
+  const data = await allRows((start, end) =>
+    supabase
+      .from("payments")
+      .select(
+        `id, received_on, amount_pence, method, note,
+         booking:bookings(id, reference, customer:customers(full_name), event:events(title))`,
+      )
+      .is("deleted_at", null)
+      .gte("received_on", from)
+      .lte("received_on", to)
+      .order("received_on")
+      .order("id")
+      .range(start, end),
+  );
   return data.map((payment) => ({
     id: payment.id,
     receivedOn: payment.received_on!,

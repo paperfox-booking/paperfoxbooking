@@ -168,6 +168,18 @@ describe("the email log", () => {
         error: "Mailbox full",
       });
 
+      // Sent in test mode, to the test address: logged as a test.
+      const test = await tx.query<{ id: string }>(
+        `select public.log_email($1, 'B1', 'Test', 'george@example.test', 'Hello',
+           '{}', true, 'msg_2', '', true) as id`,
+        [booking.id],
+      );
+      const testRow = await tx.query<{ status: string }>(
+        "select status from public.email_log where id = $1",
+        [test.rows[0]!.id],
+      );
+      expect(testRow.rows[0]?.status).toBe("test");
+
       expect(
         await tx.expectError(
           "update public.email_log set status = 'delivered' where id = $1",

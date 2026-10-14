@@ -43,6 +43,18 @@ describe("customer_settings", () => {
       const none = await tx.query("select * from public.customer_settings()");
       expect(none.rowCount).toBe(0);
 
+      // Once their only booking is cancelled, they don't get them either.
+      await tx.asSuperuser();
+      await tx.query(
+        "update public.bookings set cancelled_at = now() where customer_id = $1",
+        [customer],
+      );
+      await tx.as(booked);
+      const cancelled = await tx.query(
+        "select * from public.customer_settings()",
+      );
+      expect(cancelled.rowCount).toBe(0);
+
       await tx.asAnonymous();
       expect(
         await tx.expectError("select * from public.customer_settings()"),

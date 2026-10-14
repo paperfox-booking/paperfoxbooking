@@ -307,6 +307,7 @@ async function Booking({
                     email.template as keyof typeof EMAIL_TEMPLATE_LABELS
                   ] ?? email.template;
                 const failed = email.status === "failed";
+                const test = email.status === "test";
                 return (
                   <li
                     key={email.id}
@@ -318,11 +319,13 @@ async function Booking({
                     <strong>{label}</strong>
                     {failed
                       ? `, not sent${email.sentAt ? ` (${formatUkDateTime(email.sentAt)})` : ""}`
-                      : email.sentAt
-                        ? `, sent ${formatUkDateTime(email.sentAt)}`
-                        : email.sentOn
-                          ? `, sent ${formatUkDate(email.sentOn)}`
-                          : ", date not known"}
+                      : test
+                        ? `, test only${email.sentAt ? ` (${formatUkDateTime(email.sentAt)})` : ""}: sent to the test address, not to them`
+                        : email.sentAt
+                          ? `, sent ${formatUkDateTime(email.sentAt)}`
+                          : email.sentOn
+                            ? `, sent ${formatUkDate(email.sentOn)}`
+                            : ", date not known"}
                     {email.note ? `. ${email.note}` : null}
                     {email.subject ? (
                       <span className="block">

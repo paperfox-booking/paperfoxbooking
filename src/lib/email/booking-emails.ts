@@ -1,6 +1,6 @@
 import "server-only";
 import { publicEnv } from "@/lib/env";
-import { sumPayments } from "@/lib/bookings/money";
+import { bookingMoney, sumPayments } from "@/lib/bookings/money";
 import { ukToday } from "@/lib/dates";
 import {
   DOCUMENT_TITLES,
@@ -226,6 +226,10 @@ export interface PreparedEmail {
   templateKey: TemplateKey | "other";
   /** Where it will really go: the test address while one is set. */
   sendTo: string | null;
+  /** True while test mode sends it to the test address instead. */
+  test: boolean;
+  /** The same key means the email service sends it once, even if asked twice. */
+  idempotencyKey?: string;
   composed: ComposedEmail;
   attachments: { kind: DocumentKind; filename: string; title: string }[];
   /** Reasons it can't be sent at all. */
@@ -269,6 +273,7 @@ export function prepareEmail(
   recipient: EmailRecipient,
   choice: EmailChoice,
   payment: EmailPayment | null = recipient.lastPayment,
+  idempotencyKey?: string,
 ): PreparedEmail {
   const { settings, event } = context;
   const template =
@@ -277,12 +282,29 @@ export function prepareEmail(
     "template" in choice
       ? { subject: template?.subject ?? "", body: template?.body ?? "" }
       : choice.custom;
-  const kinds =
+  const chosenKinds =
     "template" in choice
       ? template
         ? templateAttachments(template)
         : []
       : choice.attachments;
+  // The confirmation says their place is confirmed, so it only goes once
+  // their deposit (or a free place) has secured it.
+  const state = bookingMoney(
+    {
+      pricePence: recipient.booking.pricePence,
+      depositPence: recipient.booking.depositPence,
+      paidPence: recipient.booking.paidPence,
+      cancelled: recipient.booking.cancelled,
+      balanceDueOn: event.balanceDueOn,
+    },
+    ukToday(),
+  ).state;
+  const secured =
+    state === "deposit_paid" || state === "paid" || state === "free";
+  const kinds = chosenKinds.filter(
+    (kind) => kind !== "confirmation" || secured,
+  );
   const composed = composeEmail({
     wording,
     values: placeholderValues({
@@ -309,6 +331,12 @@ export function prepareEmail(
     problems.push("This booking is cancelled.");
   }
 
+  if (kinds.length < chosenKinds.length) {
+    composed.warnings.push(
+      "The confirmation PDF is left off, because their deposit hasn't arrived yet.",
+    );
+  }
+
   const testing = settings.emailTestAddress;
   if (testing && recipient.email) {
     composed.subject = `[Test: for ${recipient.email}] ${composed.subject}`;
@@ -318,6 +346,8 @@ export function prepareEmail(
     recipient,
     templateKey: "template" in choice ? choice.template : "other",
     sendTo: testing || recipient.email,
+    test: Boolean(testing),
+    idempotencyKey,
     composed,
     attachments: kinds.map((kind) => ({
       kind,
@@ -366,6 +396,7 @@ export async function sendPreparedEmail(
     text: prepared.composed.text,
     html: prepared.composed.html,
     attachments,
+    idempotencyKey: prepared.idempotencyKey,
   });
 
   const { error: logError } = await supabase.rpc("log_email", {
@@ -378,6 +409,7 @@ export async function sendPreparedEmail(
     sent: result.ok,
     provider_message_id: result.ok ? (result.id ?? undefined) : undefined,
     error: result.ok ? "" : result.error,
+    test: prepared.test,
   });
 
   if (!result.ok) return { sent: false, error: result.error };

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { staffWithPermission } from "@/lib/auth/session";
 import { addDays, ukToday } from "@/lib/dates";
 import { friendlyDatabaseError } from "@/lib/supabase/errors";
@@ -128,6 +129,16 @@ export async function setWaitlistStatusAction(
 ): Promise<SimpleState> {
   if (!(await staffWithPermission("bookings.manage"))) {
     return { error: NOT_ALLOWED };
+  }
+  const parsed = z
+    .object({
+      eventId: z.uuid(),
+      entryId: z.uuid(),
+      status: z.enum(["waiting", "declined", "removed"]),
+    })
+    .safeParse({ eventId, entryId, status });
+  if (!parsed.success) {
+    return { error: "Something went wrong. Refresh the page and try again." };
   }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase

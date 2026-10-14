@@ -131,6 +131,7 @@ async function Emails() {
                 to {email.booking?.customer?.full_name ?? "someone"} (
                 {email.to_email})
                 {email.sent_at ? `, ${formatUkDateTime(email.sent_at)}` : null}
+                {email.status === "test" ? " (test only)" : null}
                 <span className="block">&ldquo;{email.subject}&rdquo;</span>
                 {email.status === "failed" ? (
                   <span className="block font-bold text-danger">

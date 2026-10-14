@@ -260,6 +260,16 @@ describe("who can see bookings and payments", () => {
         user.id,
         email.toUpperCase(),
       ]);
+      // Not linked until the email address is confirmed (by signing in).
+      const before = await tx.query(
+        "select user_id from public.customers where id = $1",
+        [customer],
+      );
+      expect(before.rows[0]?.user_id).toBeNull();
+      await tx.query(
+        "update auth.users set email_confirmed_at = now() where id = $1",
+        [user.id],
+      );
       await tx.as({ id: user.id, email });
       const { rows } = await tx.query(
         "select customer_id from public.bookings where event_id = $1",

@@ -3,11 +3,7 @@
 import { z } from "zod";
 import { staffWithPermission } from "@/lib/auth/session";
 import { daysBetween, isIsoDate, ukToday } from "@/lib/dates";
-import { loadEmailRecipient } from "@/lib/email/booking-emails";
-import {
-  emailAfterRecordingPayment,
-  paymentStateOf,
-} from "@/lib/email/payment-emails";
+import { emailAfterRecordingPayment } from "@/lib/email/payment-emails";
 import { SEND_GAP_MS, emailTransport } from "@/lib/email/transport";
 import { friendlyDatabaseError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -24,7 +20,8 @@ const itemSchema = z.object({
     .refine((date) => daysBetween(ukToday(), date) <= 0, {
       error: "That date is in the future",
     }),
-  description: z.string().max(400),
+  // Long statement descriptions are cut short rather than refused.
+  description: z.string().transform((value) => value.slice(0, 400)),
 });
 
 export type StatementItem = z.input<typeof itemSchema>;
@@ -59,43 +56,47 @@ export async function recordStatementPaymentsAction(
   const supabase = await createSupabaseServerClient();
   const results: StatementResult[] = [];
   for (const [index, item] of parsed.data.entries()) {
+    // The same amount on the same day for this booking, however it was
+    // recorded, is this payment again: never record it twice.
     const { data: existing } = await supabase
       .from("payments")
       .select("id")
       .eq("booking_id", item.bookingId)
       .eq("amount_pence", item.amountPence)
       .eq("received_on", item.date)
-      .like("note", `${NOTE_PREFIX}%`)
       .is("deleted_at", null)
       .limit(1);
     if (existing?.length) {
       results.push({
         recorded: false,
-        error: "Already recorded from a bank statement.",
+        error:
+          "Already recorded: they have a payment of this amount on this day.",
       });
       continue;
     }
     if (index > 0 && emailTransport() === "resend") {
       await new Promise((resolve) => setTimeout(resolve, SEND_GAP_MS));
     }
-    const before = await loadEmailRecipient(supabase, item.bookingId);
-    const { error } = await supabase.from("payments").insert({
-      booking_id: item.bookingId,
-      amount_pence: item.amountPence,
-      received_on: item.date,
-      method: "bank_transfer",
-      note: `${NOTE_PREFIX}${item.description}`.slice(0, 500),
-    });
+    const { data: payment, error } = await supabase
+      .from("payments")
+      .insert({
+        booking_id: item.bookingId,
+        amount_pence: item.amountPence,
+        received_on: item.date,
+        method: "bank_transfer",
+        note: `${NOTE_PREFIX}${item.description}`.slice(0, 500),
+      })
+      .select("id")
+      .single();
     if (error) {
       results.push({ recorded: false, error: friendlyDatabaseError(error) });
       continue;
     }
-    const email = await emailAfterRecordingPayment(
-      supabase,
-      item.bookingId,
-      before ? paymentStateOf(before) : null,
-      { amountPence: item.amountPence, receivedOn: item.date },
-    );
+    const email = await emailAfterRecordingPayment(supabase, item.bookingId, {
+      id: payment.id,
+      amountPence: item.amountPence,
+      receivedOn: item.date,
+    });
     results.push({ recorded: true, emailNote: email?.text });
   }
   return { ok: true, results };

@@ -4,9 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/card";
 import { Checkbox, Label, Select } from "@/components/ui/form";
-import { matchStatement, type MatchBooking } from "@/lib/bank/match";
+import {
+  likelyDuplicate,
+  matchStatement,
+  type MatchBooking,
+} from "@/lib/bank/match";
 import {
   StatementError,
+  decodeStatement,
   readStatement,
   type StatementLine,
 } from "@/lib/bank/statement";
@@ -67,16 +72,19 @@ export function BankImport({ bookings }: { bookings: MatchBooking[] }) {
     setSummary("");
     if (!file) return;
     try {
-      const statement = readStatement(await file.text());
+      const statement = readStatement(
+        decodeStatement(await file.arrayBuffer()),
+      );
       const found = matchStatement(statement, bookings);
       setLines(statement);
       setChoices(
         found.map((match) => ({
           bookingId: match.suggested ?? "",
-          // Not someone who's already paid in full: it may be for someone else.
+          // Not ticked if it may already be recorded, or if they've already
+          // paid in full (it may be for someone else).
           record:
             Boolean(match.suggested) &&
-            !match.alreadyRecorded &&
+            !match.duplicate &&
             (bookings.find((booking) => booking.bookingId === match.suggested)
               ?.balancePence ?? 0) > 0,
         })),
@@ -124,7 +132,7 @@ export function BankImport({ bookings }: { bookings: MatchBooking[] }) {
           bookingId: choice.bookingId,
           amountPence: match.line.amountPence,
           date: match.line.date,
-          description: match.line.description,
+          description: match.line.description.slice(0, 400),
         })),
       );
       if (!response.ok) {
@@ -189,6 +197,9 @@ export function BankImport({ bookings }: { bookings: MatchBooking[] }) {
               const choice = choices[index]!;
               const result = results[index];
               const chosen = byId.get(choice.bookingId);
+              const duplicate = chosen
+                ? likelyDuplicate(match.line, chosen)
+                : null;
               const candidateIds = new Set(
                 match.candidates.map((candidate) => candidate.bookingId),
               );
@@ -212,10 +223,10 @@ export function BankImport({ bookings }: { bookings: MatchBooking[] }) {
                     <p className="text-sm text-stone">Row {match.line.row}</p>
                   </div>
                   <p className="break-words">{match.line.description}</p>
-                  {match.alreadyRecorded ? (
+                  {duplicate && !result ? (
                     <p className="font-bold text-danger">
-                      This looks already recorded: that booking has a payment of
-                      the same amount on the same day.
+                      {duplicate} Only tick Record if you&apos;re sure it&apos;s
+                      a different payment.
                     </p>
                   ) : null}
                   {result ? (
@@ -236,12 +247,17 @@ export function BankImport({ bookings }: { bookings: MatchBooking[] }) {
                         <Select
                           id={`booking-${index}`}
                           value={choice.bookingId}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            const id = event.currentTarget.value;
+                            const picked = byId.get(id);
                             choose(index, {
-                              bookingId: event.currentTarget.value,
-                              record: event.currentTarget.value !== "",
-                            })
-                          }
+                              bookingId: id,
+                              // Ticked unless it may already be recorded.
+                              record:
+                                Boolean(picked) &&
+                                !likelyDuplicate(match.line, picked!),
+                            });
+                          }}
                           className="w-full max-w-xl"
                         >
                           <option value="">Not a booking payment</option>

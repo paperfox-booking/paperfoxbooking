@@ -418,6 +418,12 @@ If you've already paid, thank you, and please ignore this email. Bank transfers 
 -- The email log: what the system sends
 -- ---------------------------------------------------------------------------
 
+-- Emails sent in test mode go to the test address, not the customer, so
+-- they're logged as 'test' and never count as sent to that person.
+alter table public.email_log drop constraint email_log_status;
+alter table public.email_log add constraint email_log_status
+  check (status in ('queued', 'sent', 'delivered', 'bounced', 'failed', 'test'));
+
 alter table public.email_log
   add column to_email text not null default '',
   add column body text not null default '',
@@ -439,7 +445,8 @@ create or replace function public.log_email(
   attachments text[],
   sent boolean,
   provider_message_id text default null,
-  error text default ''
+  error text default '',
+  test boolean default false
 )
 returns uuid
 language plpgsql
@@ -465,7 +472,8 @@ begin
     log_email.booking_id, customer, log_email.template, left(log_email.subject, 300),
     log_email.to_email, left(log_email.body, 50000), coalesce(log_email.attachments, '{}'),
     case when log_email.sent then (now() at time zone 'Europe/London')::date end,
-    now(), false, case when log_email.sent then 'sent' else 'failed' end,
+    now(), false,
+    case when not log_email.sent then 'failed' when log_email.test then 'test' else 'sent' end,
     log_email.provider_message_id, left(coalesce(log_email.error, ''), 1000)
   )
   returning id into new_id;
@@ -473,7 +481,7 @@ begin
 end;
 $$;
 
-revoke all on function public.log_email(uuid, text, text, text, text, text[], boolean, text, text)
+revoke all on function public.log_email(uuid, text, text, text, text, text[], boolean, text, text, boolean)
   from public, anon;
-grant execute on function public.log_email(uuid, text, text, text, text, text[], boolean, text, text)
+grant execute on function public.log_email(uuid, text, text, text, text, text[], boolean, text, text, boolean)
   to authenticated, service_role;

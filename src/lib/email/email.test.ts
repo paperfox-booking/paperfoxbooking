@@ -120,11 +120,11 @@ describe("emailAfterPayment", () => {
   it("thanks them for any other payment", () => {
     expect(emailAfterPayment("unpaid", "part_paid")).toBe("thanks");
     expect(emailAfterPayment("deposit_paid", "deposit_paid")).toBe("thanks");
-    expect(emailAfterPayment("paid", "paid")).toBe("thanks");
   });
 
-  it("sends nothing for cancelled bookings or free places", () => {
+  it("sends nothing for cancelled bookings, free places or overpayments", () => {
     expect(emailAfterPayment("unpaid", "cancelled")).toBeNull();
+    expect(emailAfterPayment("paid", "paid")).toBeNull();
     expect(emailAfterPayment("free", "free")).toBeNull();
   });
 });

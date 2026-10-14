@@ -1,6 +1,6 @@
 -- What a customer needs from the settings to pay and to download their
 -- documents: the business details, the bank details for transfers and the
--- terms. Only for people with a booking of their own, and never the email
+-- terms. Only for people with a booking of their own (not cancelled), and never the email
 -- settings (test mode, reply-to and so on).
 
 create or replace function public.customer_settings()
@@ -39,6 +39,7 @@ as $$
        join public.customers c on c.id = b.customer_id
       where c.user_id = (select auth.uid())
         and c.deleted_at is null
+        and b.cancelled_at is null
    );
 $$;
 
@@ -59,6 +60,7 @@ as $$
       from public.bookings b
       join public.customers c on c.id = b.customer_id
      where b.event_id = event
+       and b.cancelled_at is null
        and c.user_id = (select auth.uid())
        and c.deleted_at is null
   );

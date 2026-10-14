@@ -40,17 +40,28 @@ export interface PaymentEmailResult {
 /**
  * After a payment is recorded, sends B2, B3 or a thank you (see
  * emailAfterPayment), unless payment emails are switched off in Settings.
+ * The state before is worked out from the state after, less this payment,
+ * so two payments recorded at the same moment can't both send B2. Each
+ * payment's email is sent at most once.
  */
 export async function emailAfterRecordingPayment(
   supabase: Supabase,
   bookingId: string,
-  stateBefore: PaymentState | null,
-  payment: EmailPayment,
+  payment: EmailPayment & { id: string },
 ): Promise<PaymentEmailResult | undefined> {
-  if (!stateBefore) return undefined;
   const recipient = await loadEmailRecipient(supabase, bookingId);
   if (!recipient) return undefined;
-  const which = emailAfterPayment(stateBefore, paymentStateOf(recipient));
+  const before: EmailRecipient = {
+    ...recipient,
+    booking: {
+      ...recipient.booking,
+      paidPence: recipient.booking.paidPence - payment.amountPence,
+    },
+  };
+  const which = emailAfterPayment(
+    paymentStateOf(before),
+    paymentStateOf(recipient),
+  );
   if (!which) return undefined;
   const label = EMAIL_TEMPLATE_LABELS[which];
 
@@ -66,7 +77,13 @@ export async function emailAfterRecordingPayment(
   const outcome = await sendPreparedEmail(
     supabase,
     context,
-    prepareEmail(context, recipient, { template: which }, payment),
+    prepareEmail(
+      context,
+      recipient,
+      { template: which },
+      payment,
+      `payment-${payment.id}-${which}`,
+    ),
   );
   return outcome.sent
     ? {

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { matchStatement, type MatchBooking } from "./match";
+import { likelyDuplicate, matchStatement, type MatchBooking } from "./match";
 import {
   StatementError,
+  decodeStatement,
   parseCsv,
   parseStatementAmount,
   parseStatementDate,
@@ -77,6 +78,46 @@ describe("readStatement", () => {
         amountPence: 8500,
       },
     ]);
+  });
+
+  it("leaves Paper Fox's own account name out of the description (NatWest)", () => {
+    const csv = [
+      "Date,Type,Description,Value,Balance,Account Name,Account Number",
+      "02/04/2026,BAC,J SMITH PF-2027-0001,60.00,1060.00,PAPER FOX EVENTS LTD,'12345678",
+    ].join("\n");
+    expect(readStatement(csv)[0]?.description).toBe("BAC J SMITH PF-2027-0001");
+  });
+
+  it("includes who paid (Starling's Counter Party)", () => {
+    const csv = [
+      "Date,Counter Party,Reference,Type,Amount (GBP),Balance (GBP)",
+      "02/04/2026,Jo Smith,March crop,FASTER PAYMENT,60.00,1060.00",
+    ].join("\n");
+    expect(readStatement(csv)[0]?.description).toBe(
+      "Jo Smith March crop FASTER PAYMENT",
+    );
+  });
+
+  it("reads a statement with no header row (HSBC)", () => {
+    const csv =
+      '02/04/2026,J SMITH PF-2027-0001,60.00\n03/04/2026,SHOP,"-12.50"';
+    expect(readStatement(csv)).toEqual([
+      {
+        row: 1,
+        date: "2026-04-02",
+        description: "J SMITH PF-2027-0001",
+        amountPence: 6000,
+      },
+    ]);
+  });
+
+  it("reads files in the older Windows encoding (Nationwide)", () => {
+    // "£60.00" in Windows-1252: the pound sign is the single byte 0xA3.
+    const bytes = new Uint8Array([0xa3, 0x36, 0x30, 0x2e, 0x30, 0x30]);
+    expect(decodeStatement(bytes.buffer)).toBe("£60.00");
+    expect(decodeStatement(new TextEncoder().encode("£60.00").buffer)).toBe(
+      "£60.00",
+    );
   });
 
   it("explains a file that isn't a statement", () => {
@@ -157,16 +198,70 @@ describe("matchStatement", () => {
     expect(match?.candidates[0]?.bookingId).toBe("PF-2027-0004");
   });
 
-  it("spots a payment that's already been recorded", () => {
-    const [match] = matchStatement(
+  it("spots a payment that may already be recorded", () => {
+    // Typed in with the Pay box two days after the bank's date.
+    const [typed] = matchStatement(
       [line("PF-2027-0001")],
       [
         booking("PF-2027-0001", "Jo Smith", {
-          payments: [{ amountPence: 6000, receivedOn: "2026-04-02" }],
+          payments: [
+            {
+              amountPence: 6000,
+              receivedOn: "2026-04-04",
+              recordedOn: "2026-04-04",
+            },
+          ],
         }),
       ],
     );
-    expect(match?.alreadyRecorded).toBe(true);
+    expect(typed?.duplicate).toMatch(
+      /^Jo Smith already has a payment of £60 on 04\/04\/2026/,
+    );
+
+    // A different amount, or more than a week apart, is a new payment.
+    expect(
+      likelyDuplicate(line("x", 6000, "2026-04-20"), {
+        ...booking("PF-2027-0001", "Jo Smith"),
+        payments: [
+          {
+            amountPence: 6000,
+            receivedOn: "2026-04-02",
+            recordedOn: "2026-04-02",
+          },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      likelyDuplicate(line("x", 5000), {
+        ...booking("PF-2027-0001", "Jo Smith"),
+        payments: [
+          {
+            amountPence: 6000,
+            receivedOn: "2026-04-02",
+            recordedOn: "2026-04-02",
+          },
+        ],
+      }),
+    ).toBeNull();
+  });
+
+  it("warns that a spreadsheet total may already include an earlier payment", () => {
+    const imported = {
+      ...booking("PF-2027-0001", "Jo Smith"),
+      payments: [
+        { amountPence: 18500, receivedOn: null, recordedOn: "2026-10-14" },
+      ],
+    };
+    expect(likelyDuplicate(line("x", 6000, "2026-04-02"), imported)).toMatch(
+      /total brought in from the spreadsheet on 14\/10\/2026 may already include this/,
+    );
+    // Paid after the spreadsheet was brought in: a new payment.
+    expect(likelyDuplicate(line("x", 6000, "2026-10-20"), imported)).toBeNull();
+  });
+
+  it("finds a reference run into other text", () => {
+    const [match] = matchStatement([line("FPI PF20270004JSMITH")], bookings);
+    expect(match?.suggested).toBe("PF-2027-0004");
   });
 
   it("leaves lines it can't match for staff to choose", () => {

@@ -143,7 +143,11 @@ sign in differently, with an emailed code, once Resend is set up.
 Do this once the database has been set up (see `docs/deploy.md`).
 
 1. **Password length:** in Supabase, go to **Authentication → Sign In /
-   Providers → Email** and set **Minimum password length** to `8`.
+   Providers → Email** and set **Minimum password length** to `8`. On the
+   same page, check **Confirm email** is **on** (it is for new projects). It
+   stops anyone signing up with a customer's email address to see their
+   bookings: a person's bookings only appear in an account once its email
+   address is confirmed.
 2. **Create each account:** go to **Authentication → Users → Add user →
    Create new user**:
    - Email address: their own email address;

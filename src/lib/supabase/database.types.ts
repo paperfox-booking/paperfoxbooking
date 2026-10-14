@@ -984,6 +984,7 @@ export type Database = {
           sent: boolean;
           subject: string;
           template: string;
+          test?: boolean;
           to_email: string;
         };
         Returns: string;

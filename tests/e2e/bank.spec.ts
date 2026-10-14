@@ -73,9 +73,9 @@ test.describe("bank statements @supabase", () => {
       mimeType: "text/csv",
       buffer: Buffer.from(statement),
     });
-    await expect(visibleText(page, /This looks already recorded/)).toHaveCount(
-      2,
-    );
+    await expect(
+      visibleText(page, /already has a payment of £60 on/),
+    ).toHaveCount(2);
     await expect(
       visibleText(page, "0 payments ticked, £0 in total."),
     ).toBeVisible();
@@ -90,6 +90,42 @@ test.describe("bank statements @supabase", () => {
     });
     await expect(
       visibleText(page, /doesn't look like a bank statement/),
+    ).toBeVisible();
+  });
+
+  test("doesn't tick a transfer that was already typed in with the Pay box", async ({
+    page,
+  }, testInfo) => {
+    const { eventId, people } = await eventWithPeople();
+    const [bea] = await sql<{ id: string; reference: string }>(
+      `select b.id, b.reference from public.bookings b
+       join public.customers c on c.id = b.customer_id
+       where b.event_id = $1 and c.full_name = $2`,
+      [eventId, people.bea],
+    );
+    // Typed in today; the bank says it arrived two days ago.
+    await sql(
+      `insert into public.payments (booking_id, amount_pence, method, received_on)
+       values ($1, 6000, 'bank_transfer', current_date)`,
+      [bea!.id],
+    );
+    const [earlier] = await sql<{ day: string }>(
+      "select to_char(current_date - 2, 'DD/MM/YYYY') as day",
+    );
+    await signInAsTeam(page, testInfo.project.name, "owner", "/admin/bank");
+    await page.getByLabel("Bank statement (CSV file)").setInputFiles({
+      name: "statement.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(
+        `Date,Description,Amount\n${earlier!.day},${bea!.reference} DEPOSIT,60.00`,
+      ),
+    });
+    await expect(
+      visibleText(page, /already has a payment of £60 on/),
+    ).toBeVisible();
+    await expect(page.getByLabel("Record")).not.toBeChecked();
+    await expect(
+      visibleText(page, "0 payments ticked, £0 in total."),
     ).toBeVisible();
   });
 });

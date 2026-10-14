@@ -18,7 +18,11 @@ prove them (`tests/db/`).
   more). Owners manage who's on the team under **Settings → Team**, and
   there's always at least one owner.
 - **Customers** will sign in with a code emailed to them, with no password.
-  They only ever see their own bookings.
+  They only ever see their own bookings, and only once their email address
+  is confirmed (keep **Confirm email** on in Supabase).
+- **To fix before customers can sign in:** any signed-in account can read
+  an event's Facebook group link, joining details and class kits text
+  (not visitors). These need narrowing to people booked and the team.
 - **Everything is recorded.** Changes to events, bookings, payments, costs,
   settings and the waiting list go into an audit log with who did it and
   when. Nobody can change the log or the email log.

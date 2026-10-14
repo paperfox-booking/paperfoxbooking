@@ -1,3 +1,5 @@
+import { daysBetween, formatUkDate } from "@/lib/dates";
+import { formatPrice } from "@/lib/money";
 import type { StatementLine } from "./statement";
 
 /**
@@ -21,7 +23,13 @@ export interface MatchBooking {
   /** Still to pay in total. */
   balancePence: number;
   /** Payments already recorded, to spot ones already entered. */
-  payments: { amountPence: number; receivedOn: string | null }[];
+  payments: {
+    amountPence: number;
+    /** When it arrived, or null for a total brought in from a spreadsheet. */
+    receivedOn: string | null;
+    /** The UK date it was recorded in the system. */
+    recordedOn: string;
+  }[];
 }
 
 export interface Candidate {
@@ -36,11 +44,44 @@ export interface LineMatch {
   candidates: Candidate[];
   /** The booking to suggest, when the match is clear. */
   suggested: string | null;
-  /** True when that booking already has this payment recorded. */
-  alreadyRecorded: boolean;
+  /** Why the suggested booking may already have this payment, if it may. */
+  duplicate: string | null;
 }
 
-const REFERENCE = /\bPF[\s-]?(\d{4})[\s-]?(\d{4})\b/gi;
+/** How far apart the bank's date and the date typed in can be. */
+const SAME_PAYMENT_DAYS = 7;
+
+/**
+ * Why this booking may already have this payment recorded, or null. A
+ * payment typed in with the Pay box is dated the day it was typed, which
+ * can be a few days after the bank's date; and a total brought in from a
+ * spreadsheet has no date at all, so anything paid before it was brought in
+ * may already be in it.
+ */
+export function likelyDuplicate(
+  line: StatementLine,
+  booking: MatchBooking,
+): string | null {
+  for (const payment of booking.payments) {
+    if (
+      payment.receivedOn &&
+      payment.amountPence === line.amountPence &&
+      Math.abs(daysBetween(payment.receivedOn, line.date)) <= SAME_PAYMENT_DAYS
+    ) {
+      return `${booking.fullName} already has a payment of ${formatPrice(payment.amountPence)} on ${formatUkDate(`${payment.receivedOn}T12:00:00Z`)}, so this may be the same one.`;
+    }
+    if (
+      !payment.receivedOn &&
+      daysBetween(line.date, payment.recordedOn) >= 0
+    ) {
+      return `${booking.fullName}'s total brought in from the spreadsheet on ${formatUkDate(`${payment.recordedOn}T12:00:00Z`)} may already include this.`;
+    }
+  }
+  return null;
+}
+
+// Also when run into other text, like "PF20270001JSMITH".
+const REFERENCE = /(?<![A-Z0-9])PF[\s-]?(\d{4})[\s-]?(\d{4})(?!\d)/gi;
 
 function words(text: string): string[] {
   return text
@@ -131,13 +172,7 @@ export function matchStatement(
           (second === undefined || second.score < best.score)));
     const suggested = clear ? best.bookingId : null;
     const booking = bookings.find((item) => item.bookingId === suggested);
-    const alreadyRecorded = Boolean(
-      booking?.payments.some(
-        (payment) =>
-          payment.amountPence === line.amountPence &&
-          payment.receivedOn === line.date,
-      ),
-    );
-    return { line, candidates, suggested, alreadyRecorded };
+    const duplicate = booking ? likelyDuplicate(line, booking) : null;
+    return { line, candidates, suggested, duplicate };
   });
 }

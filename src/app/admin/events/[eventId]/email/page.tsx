@@ -9,6 +9,7 @@ import { formatUkDateRange, ukToday } from "@/lib/dates";
 import { listTemplates, loadSettingsRow } from "@/lib/email/booking-emails";
 import { emailTransport } from "@/lib/email/transport";
 import { getEvent } from "@/lib/events/admin";
+import { allRows } from "@/lib/supabase/all-rows";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/validation/ids";
 import { BulkEmail } from "./bulk-email";
@@ -45,13 +46,18 @@ async function EmailPeople({
   if (!event) notFound();
 
   // Which standard emails each person has already had.
-  const { data: sent } = await supabase
-    .from("email_log")
-    .select("booking_id, template, bookings!inner(event_id)")
-    .eq("bookings.event_id", eventId)
-    .neq("status", "failed");
+  const sent = await allRows((from, to) =>
+    supabase
+      .from("email_log")
+      .select("booking_id, template, bookings!inner(event_id)")
+      .eq("bookings.event_id", eventId)
+      // Failed sends, and test sends to the test address, don't count.
+      .not("status", "in", "(failed,test)")
+      .order("id")
+      .range(from, to),
+  );
   const had = new Map<string, Set<string>>();
-  for (const email of sent ?? []) {
+  for (const email of sent) {
     if (!email.booking_id) continue;
     const set = had.get(email.booking_id) ?? new Set<string>();
     set.add(email.template);

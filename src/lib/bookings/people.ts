@@ -63,7 +63,8 @@ export type BookingSelect = {
 export function toPersonRow(booking: BookingSelect): PersonRow {
   const customer = booking.customer;
   const latest = booking.email_log
-    .filter((email) => email.status !== "failed")
+    // Failed sends, and test sends to the test address, don't count.
+    .filter((email) => email.status !== "failed" && email.status !== "test")
     .sort((a, b) =>
       `${b.sent_on ?? ""}${b.created_at}`.localeCompare(
         `${a.sent_on ?? ""}${a.created_at}`,

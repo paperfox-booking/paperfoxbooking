@@ -16,12 +16,15 @@ comment on column public.events.class_kits_info is
 comment on column public.events.joining_info is
   'Arrival, timetable, nearby and FAQs, for the joining details email.';
 
--- The team set them; visitors can't read them (only people signed in, as
--- with the Facebook group).
+-- The team set them. Visitors can't read them; like the Facebook group,
+-- any signed-in account can (to be narrowed to people booked, before
+-- customers can sign in).
 grant insert (class_kits_info, joining_info) on public.events to authenticated;
 grant update (class_kits_info, joining_info) on public.events to authenticated;
 
--- Copying an event copies them too, as a starting point.
+-- Copying an event doesn't copy them (like the Facebook group), so last
+-- time's dates and timetable can't go out by mistake: the emails warn
+-- while an event's boxes are empty.
 create or replace function public.copy_event(
   source_event_id uuid,
   new_title text,
@@ -53,8 +56,7 @@ begin
   insert into public.events (
     title, summary, description, included, hotel_info, venue_id,
     starts_at, ends_at, capacity, booking_opens_at, booking_closes_at,
-    balance_due_on, deposit_hold_days, copied_from_event_id,
-    class_kits_info, joining_info
+    balance_due_on, deposit_hold_days, copied_from_event_id
   )
   values (
     trim(new_title), source.summary, source.description, source.included,
@@ -66,9 +68,7 @@ begin
     private.shift_uk_days(source.booking_closes_at, shift_days),
     source.balance_due_on + shift_days,
     source.deposit_hold_days,
-    source.id,
-    source.class_kits_info,
-    source.joining_info
+    source.id
   )
   returning id into new_event_id;
 

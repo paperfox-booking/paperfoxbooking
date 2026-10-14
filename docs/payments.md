@@ -34,8 +34,9 @@ Three ways, all doing the same thing:
 3. **Bank statement** in the menu: upload the statement as a CSV file, check
    the matches, and record them all at once. Each line is matched by the
    booking reference in its description, or by the person's name. Nothing is
-   recorded until you check it, and a statement uploaded twice won't record
-   anything twice.
+   recorded until you check it. A line that may already be in the system
+   (the same amount within a week, or covered by a spreadsheet total) isn't
+   ticked, and the same amount on the same day is never recorded twice.
 
 Each payment sends the right email by itself (B2 when the deposit's paid, B3
 when it's paid in full, otherwise a thank you), unless an owner has switched

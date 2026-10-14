@@ -377,7 +377,9 @@ export function BulkEmail({
               !preview ||
               !checked ||
               sendingOff ||
-              withEmail.length === 0
+              withEmail.length === 0 ||
+              // Sent already: change the email or who gets it to send again.
+              Boolean(progress?.done)
             }
             onClick={() => void send()}
           >
