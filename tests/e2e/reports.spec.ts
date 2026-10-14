@@ -64,6 +64,31 @@ test.describe("profit and loss @supabase", () => {
     );
     expect(overflow).toBeLessThanOrEqual(0);
 
+    // Removing it updates the figures above the list too.
+    await page.getByRole("button", { name: "Remove Room hire" }).click();
+    await expect(visibleText(page, "Removed Room hire.")).toBeVisible();
+    await expect(
+      page
+        .getByRole("region", { name: "Summary" })
+        .getByText("£0.00", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      visibleText(page, /^No costs yet\. Add the first/),
+    ).toBeVisible();
+
+    // A cost someone else adds shows on coming back to the list, which
+    // Next.js keeps in the document, without reloading.
+    await sql(
+      `insert into public.event_costs (event_id, category, description, amount_pence)
+       values ($1, 'goody_bags', 'Goody bags', 4000)`,
+      [eventId],
+    );
+    await page.getByRole("link", { name: /^Back to People Test/ }).click();
+    await page.getByRole("link", { name: "Profit and loss" }).click();
+    await expect(
+      page.getByRole("textbox", { name: "Amount for Goody bags" }),
+    ).toHaveValue("40");
+
     await page.goto("/admin/reports");
     await expect(
       page.getByRole("heading", { level: 1, name: "Profit and loss" }),

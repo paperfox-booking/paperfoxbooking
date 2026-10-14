@@ -38,6 +38,15 @@ export function DirectoryGrid({
   canEdit: boolean;
 }) {
   const [people, setPeople] = useState(initialPeople);
+  // Next.js keeps recently visited pages in the document, so this list can
+  // still be here when the server sends a fresh one (for example after an
+  // import). The fresh list replaces this one. Boxes being typed in keep
+  // their text, as each is keyed by its saved value.
+  const [shownPeople, setShownPeople] = useState(initialPeople);
+  if (initialPeople !== shownPeople) {
+    setShownPeople(initialPeople);
+    setPeople(initialPeople);
+  }
   const [query, setQuery] = useState("");
   const [onlyTeam, setOnlyTeam] = useState(false);
   const [status, setStatus] = useState<Record<string, Status>>({});

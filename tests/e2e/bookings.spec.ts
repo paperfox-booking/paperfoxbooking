@@ -355,5 +355,12 @@ test.describe("the People list @supabase", () => {
     );
     await expectNoAccessibilityProblems(page);
     expect(await noSidewaysScroll(page)).toBeLessThanOrEqual(0);
+
+    // Back on the list (kept in the document by Next.js), the new mobile
+    // shows straight away, without reloading.
+    await page.getByRole("link", { name: "Back to people" }).click();
+    await expect(
+      page.getByRole("textbox", { name: `Mobile for ${people.bea}` }),
+    ).toHaveValue("07700 900999");
   });
 });

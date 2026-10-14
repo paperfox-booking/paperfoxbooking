@@ -84,6 +84,15 @@ export function PeopleGrid({
   today: string;
 }) {
   const [rows, setRows] = useState(initialRows);
+  // Next.js keeps recently visited pages in the document, so this list can
+  // still be here when the server sends a fresh one (after an import, or on
+  // coming back to the page). The fresh list replaces this one. Boxes being
+  // typed in keep their text, as each is keyed by its saved value.
+  const [shownRows, setShownRows] = useState(initialRows);
+  if (initialRows !== shownRows) {
+    setShownRows(initialRows);
+    setRows(initialRows);
+  }
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [announcement, setAnnouncement] = useState("");
