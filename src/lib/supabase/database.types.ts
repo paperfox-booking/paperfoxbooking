@@ -1052,6 +1052,17 @@ export type Database = {
         };
         Returns: string;
       };
+      my_booking_money: {
+        Args: { booking_ids: string[] };
+        Returns: {
+          amount_pence: number;
+          booking_id: string;
+          created_at: string;
+          kind: string;
+          method: Database["public"]["Enums"]["payment_method"];
+          on_date: string;
+        }[];
+      };
       pass_place: {
         Args: { booking_id: string; new_customer_id: string; reason: string };
         Returns: undefined;

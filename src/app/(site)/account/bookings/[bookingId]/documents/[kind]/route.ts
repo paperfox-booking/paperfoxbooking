@@ -50,7 +50,9 @@ export async function GET(
   const pdf = await renderDocument(kind as DocumentKind, {
     settings,
     event,
-    booking: recipient.booking,
+    // What they've paid comes from their own figures: customers can't read
+    // the payments table itself.
+    booking: { ...recipient.booking, paidPence: mine.paidPence },
     today: ukToday(),
   });
   const name = documentFileName(kind as DocumentKind, event.title);

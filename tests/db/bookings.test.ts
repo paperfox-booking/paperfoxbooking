@@ -217,13 +217,25 @@ describe("who can see bookings and payments", () => {
           table,
         ).toEqual([a.customer]);
       }
-      const payments = await tx.query<{ booking_id: string }>(
-        "select booking_id from public.payments where booking_id = any($1)",
+      // Their payments come through my_booking_money, with no notes, and
+      // never anyone else's. The payments table itself is for the team.
+      const table = await tx.query(
+        "select 1 from public.payments where booking_id = any($1)",
         [[a.booking.id, b.booking.id]],
       );
-      expect(payments.rows.map((row) => row.booking_id)).toEqual([
-        a.booking.id,
+      expect(table.rowCount).toBe(0);
+      const payments = await tx.query<{ booking_id: string }>(
+        "select * from public.my_booking_money($1)",
+        [[a.booking.id, b.booking.id]],
+      );
+      expect(payments.rows).toEqual([
+        expect.objectContaining({
+          booking_id: a.booking.id,
+          kind: "payment",
+          amount_pence: 6000,
+        }),
       ]);
+      expect(Object.keys(payments.rows[0]!)).not.toContain("note");
     });
   });
 

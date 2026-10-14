@@ -282,6 +282,10 @@ erDiagram
 | Read and change costs; read the audit log            |          |            | ✓     | ✓     |
 | Edit or delete a payment or refund, or the audit log |          |            |       |       |
 
+Customers can't read the payments and refunds tables themselves:
+`public.my_booking_money(booking_ids)` gives them the amounts, dates and
+methods for their own bookings, without the team's notes.
+
 `tests/db/bookings.test.ts`, `tests/db/refunds.test.ts`,
 `tests/db/costs.test.ts` and `tests/db/check-in.test.ts` prove these rules.
 

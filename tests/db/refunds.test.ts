@@ -105,7 +105,7 @@ describe("refunds", () => {
     });
   });
 
-  it("are hidden from door staff, and customers only see their own", async () => {
+  it("are hidden from door staff, and customers only see their own amounts", async () => {
     await inTransaction(async (tx) => {
       const event = await tx.createEvent();
       const people = [];
@@ -123,10 +123,14 @@ describe("refunds", () => {
       await tx.query(REFUND, [b.booking.id, 2000]);
 
       await tx.as(a.user);
-      const own = await tx.query<{ amount_pence: number }>(
-        "select amount_pence from public.refunds",
+      // Not the refunds table (with its reasons), only their own amounts.
+      const table = await tx.query("select 1 from public.refunds");
+      expect(table.rowCount).toBe(0);
+      const own = await tx.query<{ kind: string; amount_pence: number }>(
+        "select kind, amount_pence from public.my_booking_money($1) where kind = 'refund'",
+        [[a.booking.id, b.booking.id]],
       );
-      expect(own.rows).toEqual([{ amount_pence: 1000 }]);
+      expect(own.rows).toEqual([{ kind: "refund", amount_pence: 1000 }]);
       expect(await tx.expectError(REFUND, [a.booking.id, 100])).toMatch(
         /row-level security/,
       );

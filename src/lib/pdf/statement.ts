@@ -1,5 +1,5 @@
 import "server-only";
-import { statementLines } from "@/lib/bookings/statement";
+import { statementLines, type StatementLine } from "@/lib/bookings/statement";
 import { ukToday } from "@/lib/dates";
 import { loadEmailEvent, loadEmailRecipient } from "@/lib/email/booking-emails";
 import type { EmailSettings } from "@/lib/email/values";
@@ -16,26 +16,32 @@ export async function statementPdf(
   supabase: Supabase,
   bookingId: string,
   settings: EmailSettings,
+  /** A customer's own figures (they can't read the payments table). */
+  own?: { lines: StatementLine[]; paidPence: number },
 ): Promise<{ pdf: Buffer; filename: string } | null> {
   const [recipient, { data: money }] = await Promise.all([
     loadEmailRecipient(supabase, bookingId),
-    supabase
-      .from("bookings")
-      .select(
-        `payments(amount_pence, method, received_on, deleted_at, created_at),
-         refunds(amount_pence, method, refunded_on, deleted_at, created_at)`,
-      )
-      .eq("id", bookingId)
-      .maybeSingle(),
+    own
+      ? { data: null }
+      : supabase
+          .from("bookings")
+          .select(
+            `payments(amount_pence, method, received_on, deleted_at, created_at),
+             refunds(amount_pence, method, refunded_on, deleted_at, created_at)`,
+          )
+          .eq("id", bookingId)
+          .maybeSingle(),
   ]);
-  if (!recipient || !money) return null;
+  if (!recipient || (!own && !money)) return null;
   const event = await loadEmailEvent(supabase, recipient.eventId);
   if (!event) return null;
   const pdf = await renderStatement({
     settings,
     event,
-    booking: recipient.booking,
-    lines: statementLines(money.payments, money.refunds),
+    booking: own
+      ? { ...recipient.booking, paidPence: own.paidPence }
+      : recipient.booking,
+    lines: own ? own.lines : statementLines(money!.payments, money!.refunds),
     today: ukToday(),
   });
   return { pdf, filename: statementFileName(recipient.booking.reference) };

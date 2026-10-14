@@ -20,7 +20,7 @@ export async function GET(
     return new Response("Please sign in to download this.", { status: 401 });
   }
   if (!isUuid(bookingId)) return new Response("Not found", { status: 404 });
-  const mine = (await listMyBookings(user.id)).some(
+  const mine = (await listMyBookings(user.id)).find(
     (booking) => booking.id === bookingId,
   );
   if (!mine) return new Response("Not found", { status: 404 });
@@ -28,7 +28,10 @@ export async function GET(
   // Someone whose only booking is cancelled doesn't get the settings (with
   // the bank details), so their statement uses the public details.
   const settings = (await loadCustomerSettings()) ?? publicSettings();
-  const statement = await statementPdf(supabase, bookingId, settings);
+  const statement = await statementPdf(supabase, bookingId, settings, {
+    lines: mine.statement,
+    paidPence: mine.paidPence,
+  });
   if (!statement) return new Response("Not found", { status: 404 });
   return pdfResponse(statement.pdf, statement.filename);
 }
