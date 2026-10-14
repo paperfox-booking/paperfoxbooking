@@ -1052,6 +1052,10 @@ export type Database = {
         };
         Returns: string;
       };
+      pass_place: {
+        Args: { booking_id: string; new_customer_id: string; reason: string };
+        Returns: undefined;
+      };
       set_checked_in: {
         Args: { arrived: boolean; booking_id: string };
         Returns: string;

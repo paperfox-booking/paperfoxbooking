@@ -119,6 +119,18 @@ describe("describeChange", () => {
     ).toEqual(["Payment of £60 removed: Recorded twice."]);
   });
 
+  it("describes a place passed on to someone else", () => {
+    expect(
+      describeChange(
+        entry({
+          old_values: { customer_id: "jo", notes: "" },
+          new_values: { customer_id: "ann", notes: "" },
+        }),
+        { ...names, people: new Map([["jo", "Jo Smith"]]) },
+      ),
+    ).toEqual(["Place passed on from Jo Smith to someone else."]);
+  });
+
   it("describes refunds recorded and removed", () => {
     expect(
       describeChange(

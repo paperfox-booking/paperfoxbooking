@@ -237,6 +237,77 @@ test.describe("refunds @supabase", () => {
   });
 });
 
+test.describe("passing a place on @supabase", () => {
+  test("an owner passes a place to someone who's been before", async ({
+    page,
+  }, testInfo) => {
+    const { eventId, people } = await eventWithPeople();
+    const newcomer = people.zoe.replace("Zoe Crafter", "Cara Newcomer");
+    const email = `${newcomer.replace(/\s+/g, ".").toLowerCase()}@example.test`;
+    await sql(
+      "insert into public.customers (full_name, email) values ($1, $2)",
+      [newcomer, email],
+    );
+    const [booking] = await sql<{ id: string; reference: string }>(
+      `select b.id, b.reference from public.bookings b join public.customers c on c.id = b.customer_id
+        where b.event_id = $1 and c.full_name = $2`,
+      [eventId, people.zoe],
+    );
+    await sql(
+      "insert into public.payments (booking_id, amount_pence, received_on) values ($1, 6000, '2026-09-01')",
+      [booking!.id],
+    );
+    await signInAsTeam(
+      page,
+      testInfo.project.name,
+      "owner",
+      `/admin/bookings/${booking!.id}`,
+    );
+
+    await openDetails(page, "Pass this place to someone else");
+    await page
+      .getByLabel("Who's taking the place")
+      .fill(`${newcomer} (${email})`);
+    // Choosing someone who's been before fills in their email.
+    await expect(page.getByLabel("Who's taking the place")).toHaveValue(
+      newcomer,
+    );
+    await expect(page.getByLabel("Their email (optional)")).toHaveValue(email);
+    await expectNoAccessibilityProblems(page);
+    await page.getByRole("button", { name: "Pass the place on" }).click();
+    await expect(
+      visibleText(page, "Say why, for example Approved by Nichola", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await page
+      .getByLabel("Why it's being passed on")
+      .fill("Approved by Nichola by email");
+    await page.getByRole("button", { name: "Pass the place on" }).click();
+
+    await expect(
+      visibleText(page, /^The place has been passed on\./),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: newcomer }),
+    ).toBeVisible();
+    // Same booking: same reference, and the payment came with it.
+    await expect(
+      visibleText(page, booking!.reference, { exact: false }).first(),
+    ).toBeVisible();
+    await expect(visibleText(page, "Deposit paid")).toBeVisible();
+    await expect(
+      visibleText(page, `Place passed on from ${people.zoe} to ${newcomer}.`),
+    ).toBeVisible();
+    await expect(
+      visibleText(
+        page,
+        /Place passed on from .+: Approved by Nichola by email/,
+      ).first(),
+    ).toBeVisible();
+  });
+});
+
 test.describe("the People list @supabase", () => {
   test("an owner updates someone's details in the list and on their profile", async ({
     page,

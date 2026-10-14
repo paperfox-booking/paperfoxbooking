@@ -159,6 +159,8 @@ export interface BookingDetail {
   history: (AuditEntry & { changedBy: string | null })[];
   /** Team members' names, for "recorded by" and the history. */
   people: Map<string, string>;
+  /** Names of everyone who's had this place, for the history. */
+  customerNames: Map<string, string>;
 }
 
 export async function getBookingDetail(
@@ -216,6 +218,26 @@ export async function getBookingDetail(
         .select("id, full_name, email")
         .in("id", [...new Set(staffIds)])
     : { data: [] };
+  // Everyone who's had this place, if it's been passed on.
+  const customerIds = new Set(
+    (audit ?? [])
+      .filter((entry) => entry.table_name === "bookings")
+      .flatMap((entry) =>
+        [entry.old_values, entry.new_values].map((values) =>
+          values && typeof values === "object" && !Array.isArray(values)
+            ? values.customer_id
+            : null,
+        ),
+      )
+      .filter((id): id is string => typeof id === "string"),
+  );
+  const { data: customers } =
+    customerIds.size > 1
+      ? await supabase
+          .from("customers")
+          .select("id, full_name")
+          .in("id", [...customerIds])
+      : { data: [] };
 
   return {
     id: booking.id,
@@ -309,6 +331,9 @@ export async function getBookingDetail(
         profile.id,
         profile.full_name || profile.email,
       ]),
+    ),
+    customerNames: new Map(
+      (customers ?? []).map((customer) => [customer.id, customer.full_name]),
     ),
   };
 }

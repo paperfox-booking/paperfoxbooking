@@ -10,7 +10,11 @@ import { Card, Notice } from "@/components/ui/card";
 import { Select } from "@/components/ui/form";
 import { can } from "@/lib/auth/permissions";
 import { requireStaff } from "@/lib/auth/session";
-import { getBookingDetail, listRooms } from "@/lib/bookings/admin";
+import {
+  getBookingDetail,
+  listKnownPeople,
+  listRooms,
+} from "@/lib/bookings/admin";
 import { describeChange } from "@/lib/bookings/history";
 import {
   PAYMENT_STATE_LABELS,
@@ -49,6 +53,7 @@ import { isUuid } from "@/lib/validation/ids";
 import { cn } from "@/lib/utils";
 import {
   CancelForm,
+  PassPlaceForm,
   PriceForm,
   RecordEmailForm,
   RecordPaymentForm,
@@ -78,6 +83,9 @@ const NOTICES = {
     text: "Booked in from the waiting list. Send them B1 below, with how to pay.",
   },
   "price-changed": { text: "Price changed." },
+  "place-passed": {
+    text: "The place has been passed on. Send them B2 or B3 below, so they have the details.",
+  },
   cancelled: { text: "The booking has been cancelled and the place freed up." },
   reinstated: { text: "The booking has been reinstated." },
 };
@@ -145,6 +153,7 @@ async function Booking({
       (event?.options ?? []).map((option) => [option.id, option.name]),
     ),
     rooms: new Map(rooms.map((room) => [room.id, room.name])),
+    people: booking.customerNames,
   };
   const who = (id: string | null) =>
     id ? (booking.people.get(id) ?? "Someone on the team") : "Imported";
@@ -565,6 +574,25 @@ async function Booking({
                       ? ""
                       : penceToPoundsInput(booking.depositPence)
                   }
+                />
+              </div>
+            </details>
+          ) : null}
+          {!cancelled ? (
+            <details className="rounded-2xl border border-cream bg-white p-4">
+              <summary className="cursor-pointer font-bold">
+                Pass this place to someone else
+              </summary>
+              <div className="mt-3">
+                <PassPlaceForm
+                  bookingId={booking.id}
+                  currentName={booking.customer.fullName}
+                  knownPeople={(await listKnownPeople())
+                    .filter((person) => person.id !== booking.customer.id)
+                    .map((person) => ({
+                      fullName: person.fullName,
+                      email: person.email,
+                    }))}
                 />
               </div>
             </details>

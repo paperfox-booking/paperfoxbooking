@@ -603,3 +603,118 @@ describe("copying an event with rooms", () => {
     });
   });
 });
+
+describe("passing a place on", () => {
+  it("moves the booking and its payments to someone else, with the reason in the notes", async () => {
+    await inTransaction(async (tx) => {
+      const event = await tx.createEvent();
+      const first = await tx.createCustomer("Jo First");
+      const second = await tx.createCustomer("Ann Second");
+      const booking = await tx.createBooking(event, first);
+      await tx.createPayment(booking.id, 6000);
+      await tx.query(
+        "update public.bookings set checked_in_at = now() where id = $1",
+        [booking.id],
+      );
+      const admin = await tx.createStaff("admin");
+      await tx.as(admin);
+
+      await tx.query("select public.pass_place($1, $2, $3)", [
+        booking.id,
+        second,
+        "Approved by Nichola by email",
+      ]);
+      const { rows } = await tx.query<{
+        customer_id: string;
+        reference: string;
+        notes: string;
+        checked_in_at: string | null;
+        paid: number;
+      }>(
+        `select b.customer_id, b.reference, b.notes, b.checked_in_at,
+                (select sum(amount_pence)::int from public.payments p where p.booking_id = b.id) as paid
+           from public.bookings b where b.id = $1`,
+        [booking.id],
+      );
+      expect(rows[0]).toMatchObject({
+        customer_id: second,
+        reference: booking.reference,
+        checked_in_at: null,
+        paid: 6000,
+      });
+      expect(rows[0]!.notes).toMatch(
+        /^Place passed on from Jo First on \d\d\/\d\d\/\d{4}: Approved by Nichola by email$/,
+      );
+
+      const audit = await tx.query(
+        `select changed_by, old_values ->> 'customer_id' as from_id, new_values ->> 'customer_id' as to_id
+           from public.audit_log where table_name = 'bookings' and record_id = $1 and action = 'update'`,
+        [booking.id],
+      );
+      expect(audit.rows).toContainEqual({
+        changed_by: admin.id,
+        from_id: first,
+        to_id: second,
+      });
+    });
+  });
+
+  it("refuses someone already booked, a cancelled booking, and no reason", async () => {
+    await inTransaction(async (tx) => {
+      const event = await tx.createEvent();
+      const first = await tx.createCustomer("Jo First");
+      const second = await tx.createCustomer("Ann Second");
+      const booking = await tx.createBooking(event, first);
+      await tx.createBooking(event, second);
+      const third = await tx.createCustomer("Bea Third");
+      await tx.as(await tx.createStaff("owner"));
+
+      const pass = "select public.pass_place($1, $2, $3)";
+      expect(await tx.expectError(pass, [booking.id, second, "Swap"])).toMatch(
+        /Ann Second already has a place on this event/,
+      );
+      expect(await tx.expectError(pass, [booking.id, third, "  "])).toMatch(
+        /Say why the place is being passed on/,
+      );
+      expect(await tx.expectError(pass, [booking.id, first, "Swap"])).toMatch(
+        /They already have this place/,
+      );
+      await tx.query(
+        "update public.bookings set cancelled_at = now(), cancel_reason = 'x' where id = $1",
+        [booking.id],
+      );
+      expect(await tx.expectError(pass, [booking.id, third, "Swap"])).toMatch(
+        /This booking is cancelled/,
+      );
+    });
+  });
+
+  it("is only for owners and admins", async () => {
+    await inTransaction(async (tx) => {
+      const event = await tx.createEvent();
+      const booking = await tx.createBooking(
+        event,
+        await tx.createCustomer("Jo First"),
+      );
+      const other = await tx.createCustomer("Ann Second");
+      const door = await tx.createStaff("door");
+      const user = await tx.createUser("Customer");
+      for (const who of [door, user]) {
+        await tx.as(who);
+        expect(
+          await tx.expectError("select public.pass_place($1, $2, 'Swap')", [
+            booking.id,
+            other,
+          ]),
+        ).toMatch(/Only owners and admins can pass a place on/);
+      }
+      await tx.asAnonymous();
+      expect(
+        await tx.expectError("select public.pass_place($1, $2, 'Swap')", [
+          booking.id,
+          other,
+        ]),
+      ).toMatch(/permission denied/);
+    });
+  });
+});

@@ -108,6 +108,19 @@ export const addPersonSchema = z.object({
   roomId: optionalId,
 });
 
+export const PASS_PLACE_FIELDS = ["fullName", "email", "reason"] as const;
+export type PassPlaceField = (typeof PASS_PLACE_FIELDS)[number];
+
+/** Passing a place to someone else, with Paper Fox's approval. */
+export const passPlaceSchema = z.object({
+  fullName: requiredText(200, "Enter the name of the person taking the place"),
+  email: optionalEmail,
+  reason: requiredText(
+    300,
+    "Say why, for example Approved by Nichola by email on 12 October",
+  ),
+});
+
 // ---------------------------------------------------------------------------
 // Payments
 // ---------------------------------------------------------------------------

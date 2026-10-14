@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import {
   MoneyField,
   SelectField,
@@ -18,6 +18,7 @@ import {
 import {
   cancelBookingAction,
   changePriceAction,
+  passPlaceAction,
   recordEmailAction,
   recordPaymentAction,
   recordRefundAction,
@@ -27,6 +28,7 @@ import {
   sendEmailAction,
   type CancelState,
   type EmailRecordState,
+  type PassPlaceState,
   type PaymentState,
   type PriceState,
   type RefundState,
@@ -382,6 +384,95 @@ export function CancelForm({ bookingId }: { bookingId: string }) {
       ) : null}
       <Button type="submit" variant="secondary" disabled={pending}>
         Cancel the booking
+      </Button>
+    </form>
+  );
+}
+
+function suggestion(person: { fullName: string; email: string }): string {
+  return person.email
+    ? `${person.fullName} (${person.email})`
+    : person.fullName;
+}
+
+export function PassPlaceForm({
+  bookingId,
+  currentName,
+  knownPeople,
+}: {
+  bookingId: string;
+  currentName: string;
+  knownPeople: { fullName: string; email: string }[];
+}) {
+  const name = useRef<HTMLInputElement>(null);
+  const email = useRef<HTMLInputElement>(null);
+  const [state, formAction, pending] = useActionState(
+    (previous: PassPlaceState, formData: FormData) =>
+      passPlaceAction(bookingId, previous, formData),
+    {},
+  );
+  const errors = state.fieldErrors ?? {};
+
+  function pickKnownPerson(value: string) {
+    const match = knownPeople.find((person) => suggestion(person) === value);
+    if (match && name.current && email.current) {
+      name.current.value = match.fullName;
+      email.current.value = match.email;
+    }
+  }
+
+  return (
+    <form action={formAction} className="space-y-4" noValidate>
+      {state.error ? <Notice tone="error">{state.error}</Notice> : null}
+      <p>
+        For when {currentName} can&apos;t come and you&apos;ve approved someone
+        to take their place. The booking moves to them, with its reference,
+        option, room and payments. Any money is settled between the two of them.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          ref={name}
+          id="pass-name"
+          name="fullName"
+          label="Who's taking the place"
+          hint="Start typing to choose someone who's been before."
+          list="pass-known-people"
+          autoComplete="off"
+          error={errors.fullName}
+          defaultValue={state.values?.fullName ?? ""}
+          onChange={(event) => pickKnownPerson(event.currentTarget.value)}
+        />
+        <TextField
+          ref={email}
+          id="pass-email"
+          name="email"
+          type="email"
+          inputMode="email"
+          label="Their email (optional)"
+          spellCheck={false}
+          error={errors.email}
+          defaultValue={state.values?.email ?? ""}
+        />
+      </div>
+      <datalist id="pass-known-people">
+        {knownPeople.map((person) => (
+          <option
+            key={`${person.fullName}:${person.email}`}
+            value={suggestion(person)}
+          />
+        ))}
+      </datalist>
+      <TextField
+        id="pass-reason"
+        name="reason"
+        label="Why it's being passed on"
+        hint="For example, approved by Nichola by email on 12 October. It's added to the booking's notes."
+        error={errors.reason}
+        defaultValue={state.values?.reason ?? ""}
+        maxLength={300}
+      />
+      <Button type="submit" variant="secondary" disabled={pending}>
+        {pending ? "Saving…" : "Pass the place on"}
       </Button>
     </form>
   );

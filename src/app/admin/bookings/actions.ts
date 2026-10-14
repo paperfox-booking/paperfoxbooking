@@ -15,6 +15,7 @@ import {
   CANCEL_FIELDS,
   CELL_COLUMNS,
   EMAIL_RECORD_FIELDS,
+  PASS_PLACE_FIELDS,
   PAYMENT_FIELDS,
   PERSON_CELLS,
   PRICE_FIELDS,
@@ -24,6 +25,7 @@ import {
   cellSchemas,
   emailRecordSchema,
   isCell,
+  passPlaceSchema,
   paymentSchema,
   priceSchema,
   refundSchema,
@@ -32,6 +34,7 @@ import {
   type AddPersonField,
   type CancelField,
   type EmailRecordField,
+  type PassPlaceField,
   type PaymentField,
   type PriceField,
   type RefundField,
@@ -74,6 +77,38 @@ async function optionPrice(
     .is("deleted_at", null)
     .maybeSingle();
   return data;
+}
+
+/**
+ * Someone already on file with this email address, or a new person. People
+ * without an email address are always added as new.
+ */
+async function findOrCreateCustomer(
+  supabase: Supabase,
+  fullName: string,
+  email: string | null,
+): Promise<{ id: string } | { error: string }> {
+  if (email) {
+    const { data: existing } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("email", email)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (existing) return { id: existing.id };
+  }
+  const { data: created, error } = await supabase
+    .from("customers")
+    .insert({ full_name: fullName, email })
+    .select("id")
+    .single();
+  if (error) {
+    return {
+      error:
+        error.code === "23505" ? EMAIL_TAKEN : friendlyDatabaseError(error),
+    };
+  }
+  return { id: created.id };
 }
 
 // ---------------------------------------------------------------------------
@@ -192,31 +227,13 @@ export async function addPersonAction(
   const person = parsed.data;
   const supabase = await createSupabaseServerClient();
 
-  let customerId: string | null = null;
-  if (person.email) {
-    const { data: existing } = await supabase
-      .from("customers")
-      .select("id")
-      .eq("email", person.email)
-      .is("deleted_at", null)
-      .maybeSingle();
-    customerId = existing?.id ?? null;
-  }
-  if (!customerId) {
-    const { data: created, error } = await supabase
-      .from("customers")
-      .insert({ full_name: person.fullName, email: person.email })
-      .select("id")
-      .single();
-    if (error) {
-      return {
-        values,
-        error:
-          error.code === "23505" ? EMAIL_TAKEN : friendlyDatabaseError(error),
-      };
-    }
-    customerId = created.id;
-  }
+  const found = await findOrCreateCustomer(
+    supabase,
+    person.fullName,
+    person.email,
+  );
+  if ("error" in found) return { values, error: found.error };
+  const customerId = found.id;
 
   const option = person.optionId
     ? await optionPrice(supabase, eventId, person.optionId)
@@ -352,6 +369,38 @@ export async function removePaymentAction(
   if (error) return { error: friendlyDatabaseError(error) };
   if (count === 0) return { error: "That payment has already been removed." };
   redirect(`/admin/bookings/${bookingId}?notice=payment-removed`);
+}
+
+export type PassPlaceState = FormState<PassPlaceField>;
+
+/** Passes a place to someone else: the booking and its payments move to them. */
+export async function passPlaceAction(
+  bookingId: string,
+  _previous: PassPlaceState,
+  formData: FormData,
+): Promise<PassPlaceState> {
+  const values = readForm(formData, PASS_PLACE_FIELDS);
+  if (!(await staffWithPermission("bookings.manage"))) {
+    return { values, error: NOT_ALLOWED };
+  }
+  const parsed = passPlaceSchema.safeParse(values);
+  if (!parsed.success) {
+    return { values, fieldErrors: fieldErrorsFrom(parsed.error) };
+  }
+  const supabase = await createSupabaseServerClient();
+  const found = await findOrCreateCustomer(
+    supabase,
+    parsed.data.fullName,
+    parsed.data.email,
+  );
+  if ("error" in found) return { values, error: found.error };
+  const { error } = await supabase.rpc("pass_place", {
+    booking_id: bookingId,
+    new_customer_id: found.id,
+    reason: parsed.data.reason,
+  });
+  if (error) return { values, error: friendlyDatabaseError(error) };
+  redirect(`/admin/bookings/${bookingId}?notice=place-passed`);
 }
 
 export type RefundState = FormState<RefundField>;

@@ -17,6 +17,8 @@ export interface AuditEntry {
 export interface HistoryNames {
   options: Map<string, string>;
   rooms: Map<string, string>;
+  /** People's names, for a place passed on to someone else. */
+  people?: Map<string, string>;
 }
 
 const METHODS: Record<string, string> = {
@@ -117,6 +119,16 @@ export function describeChange(
       ];
     }
     const lines: string[] = [];
+    if (
+      typeof before.customer_id === "string" &&
+      typeof after.customer_id === "string" &&
+      before.customer_id !== after.customer_id
+    ) {
+      const name = (id: string) => names.people?.get(id) ?? "someone else";
+      lines.push(
+        `Place passed on from ${name(before.customer_id)} to ${name(after.customer_id)}.`,
+      );
+    }
     if (!before.cancelled_at && after.cancelled_at) {
       lines.push(`Cancelled: ${String(after.cancel_reason)}.`);
     } else if (before.cancelled_at && !after.cancelled_at) {

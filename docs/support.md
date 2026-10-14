@@ -41,10 +41,13 @@ list**.
 
 ## "Can my friend come instead?"
 
-The terms need Paper Fox's written approval. If you agree, add the friend on
-the people booked list, cancel the original booking with the reason "Place
-passed to …", and record any money as it was paid. They settle up between
-themselves.
+The terms need Paper Fox's written approval. If you agree, open the
+booking and choose **Pass this place to someone else**. Start typing the
+friend's name to pick them if they've been before, or type their name and
+email, and say who approved it. The booking moves to them with its
+reference, option, room and payments, and the reason goes in its notes.
+They settle up between themselves. Then send them B2 or B3 from **Send an
+email**, so they have the details.
 
 ## "Can I sit with my friend?"
 

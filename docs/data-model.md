@@ -258,6 +258,10 @@ erDiagram
   already on file (matched by email).
 - **`audit_log`** records every change to events, options, bookings,
   payments and costs, with who made it. Nobody can change it.
+- **`public.pass_place(booking_id, new_customer_id, reason)`** passes a
+  place to someone else (owners and admins only): the booking, with its
+  reference and payments, moves to them in one step, the reason is added to
+  its notes, and someone already booked on the event is refused.
 - **`public.set_checked_in(booking_id, arrived)`** marks someone as arrived,
   or undoes it. Any team member can, door staff included, but only for a
   booking that isn't cancelled. Pressing Arrived twice keeps the first time.
