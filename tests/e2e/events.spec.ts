@@ -198,6 +198,38 @@ test.describe("setting up events @supabase", () => {
     ).toBeVisible();
   });
 
+  test("an admin moves an event to new dates, and its options move with it", async ({
+    page,
+  }, testInfo) => {
+    const eventId = await createDraftEvent(`Move Test ${uniqueSuffix()}`);
+    await signInAsTeam(
+      page,
+      testInfo.project.name,
+      "admin",
+      `/admin/events/${eventId}`,
+    );
+    await expect(
+      visibleText(page, "Starts 4pm on Friday 14 March 2031"),
+    ).toBeVisible();
+
+    // From March (GMT) to June (British Summer Time).
+    await page.getByRole("link", { name: "Change details" }).click();
+    await fillDate(page, "Start date", "2031-06-13");
+    await fillDate(page, "End date", "2031-06-15");
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    await expect(visibleText(page, "Saved.")).toBeVisible();
+    await expect(
+      visibleText(page, "Friday 13 to Sunday 15 June 2031").first(),
+    ).toBeVisible();
+    await expect(
+      visibleText(page, "Starts 4pm on Friday 13 June 2031"),
+    ).toBeVisible();
+    await expect(
+      visibleText(page, "Starts 9am on Friday 13 June 2031"),
+    ).toBeVisible();
+  });
+
   test("an admin changes an option's price and deposit", async ({
     page,
   }, testInfo) => {
