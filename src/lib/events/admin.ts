@@ -1,6 +1,11 @@
 import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import {
+  EVENT_COLUMNS,
+  NO_PRIVATE_DETAILS,
+  loadPrivateDetails,
+} from "./private-details";
 
 /**
  * Reads events for the admin area, as the signed-in team member (row level
@@ -93,14 +98,16 @@ export async function getEvent(id: string): Promise<AdminEvent | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("events")
-    .select("*, venue:venues(*), options:ticket_types(*)")
+    .select(`${EVENT_COLUMNS}, venue:venues(*), options:ticket_types(*)`)
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(`Couldn't load the event: ${error.message}`);
   if (!data) return null;
+  const details = await loadPrivateDetails(supabase, [data.id]);
   return {
     ...data,
+    ...(details.get(data.id) ?? NO_PRIVATE_DETAILS),
     options: data.options
       .filter((option) => !option.deleted_at)
       .sort(

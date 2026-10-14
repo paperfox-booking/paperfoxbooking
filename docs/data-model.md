@@ -129,20 +129,22 @@ erDiagram
 
 ### Who can do what with events
 
-|                                                        | Visitor | Customer | Door staff | Admin | Owner |
-| ------------------------------------------------------ | ------- | -------- | ---------- | ----- | ----- |
-| Read published events, their options and venues        | ✓       | ✓        | ✓          | ✓     | ✓     |
-| Read an event's Facebook group                         |         | ✓\*      | ✓          | ✓     | ✓     |
-| Read drafts                                            |         |          | ✓          | ✓     | ✓     |
-| Add and change venues, events and options; copy events |         |          |            | ✓     | ✓     |
-| Change an event's web address, or who created a record |         |          |            |       |       |
-| Delete rows outright (records are marked deleted)      |         |          |            |       |       |
+|                                                                     | Visitor | Customer | Door staff | Admin | Owner |
+| ------------------------------------------------------------------- | ------- | -------- | ---------- | ----- | ----- |
+| Read published events, their options and venues                     | ✓       | ✓        | ✓          | ✓     | ✓     |
+| Read an event's Facebook group, joining details and class kits text |         | ✓\*      | ✓          | ✓     | ✓     |
+| Read drafts                                                         |         |          | ✓          | ✓     | ✓     |
+| Add and change venues, events and options; copy events              |         |          |            | ✓     | ✓     |
+| Change an event's web address, or who created a record              |         |          |            |       |       |
+| Delete rows outright (records are marked deleted)                   |         |          |            |       |       |
 
-\* Signed-in customers can currently read it for published events. Once
-bookings exist (Phase 2), this will be limited to people booked on the
-event.
+\* Only for an event they have a booking on (not cancelled). Nobody signed
+in can select these three columns directly: they come from
+`public.event_private_details(event_ids)`, which gives them to the team and
+to people booked on the event.
 
-`tests/db/events.test.ts` proves these rules.
+`tests/db/events.test.ts` and `tests/db/customer-settings.test.ts` prove
+these rules.
 
 ## People, bookings and money (Phase 2)
 

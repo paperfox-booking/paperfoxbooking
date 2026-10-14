@@ -96,3 +96,94 @@ describe("customer_settings", () => {
     });
   });
 });
+
+describe("an event's private details", () => {
+  const PRIVATE =
+    "select event_id, facebook_group_url, joining_info, class_kits_info from public.event_private_details($1)";
+
+  it("are only for the team and people booked on that event", async () => {
+    await inTransaction(async (tx) => {
+      const mine = await tx.createEvent({ status: "published" });
+      const other = await tx.createEvent({ status: "published" });
+      for (const event of [mine, other]) {
+        await tx.query(
+          `update public.events
+              set facebook_group_url = 'https://www.facebook.com/groups/private',
+                  joining_info = 'Arrive from 3pm', class_kits_info = 'Two kits'
+            where id = $1`,
+          [event],
+        );
+      }
+      const booked = await tx.createUser();
+      const browsing = await tx.createUser();
+      const customer = await tx.createCustomer(
+        "Jo Booked",
+        booked.email,
+        booked.id,
+      );
+      await tx.createBooking(mine, customer);
+      const staff = [
+        await tx.createStaff("door"),
+        await tx.createStaff("admin"),
+        await tx.createStaff("owner"),
+      ];
+
+      // Signed-in accounts can't read the columns themselves at all.
+      for (const user of [browsing, booked, ...staff]) {
+        await tx.as(user);
+        for (const column of [
+          "facebook_group_url",
+          "joining_info",
+          "class_kits_info",
+        ]) {
+          expect(
+            await tx.expectError(
+              `select ${column} from public.events where id = $1`,
+              [mine],
+            ),
+          ).toMatch(/permission denied/);
+        }
+        // Everything else about a published event still reads as before.
+        const { rows } = await tx.query(
+          "select title, status from public.events where id = $1",
+          [mine],
+        );
+        expect(rows).toHaveLength(1);
+      }
+
+      await tx.as(browsing);
+      expect((await tx.query(PRIVATE, [[mine, other]])).rowCount).toBe(0);
+
+      await tx.as(booked);
+      const own = await tx.query(PRIVATE, [[mine, other]]);
+      expect(own.rows).toEqual([
+        {
+          event_id: mine,
+          facebook_group_url: "https://www.facebook.com/groups/private",
+          joining_info: "Arrive from 3pm",
+          class_kits_info: "Two kits",
+        },
+      ]);
+
+      for (const user of staff) {
+        await tx.as(user);
+        const seen = await tx.query(PRIVATE, [[mine, other]]);
+        expect(seen.rowCount).toBe(2);
+      }
+
+      // Once their booking is cancelled, they don't get them any more.
+      await tx.asSuperuser();
+      await tx.query(
+        "update public.bookings set cancelled_at = now() where customer_id = $1",
+        [customer],
+      );
+      await tx.as(booked);
+      expect((await tx.query(PRIVATE, [[mine]])).rowCount).toBe(0);
+
+      await tx.asAnonymous();
+      expect(await tx.expectError(PRIVATE, [[mine]])).toMatch(
+        /permission denied/,
+      );
+    });
+  });
+});

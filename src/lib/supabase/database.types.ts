@@ -1024,6 +1024,15 @@ export type Database = {
           website: string;
         }[];
       };
+      event_private_details: {
+        Args: { event_ids: string[] };
+        Returns: {
+          class_kits_info: string;
+          event_id: string;
+          facebook_group_url: string;
+          joining_info: string;
+        }[];
+      };
       import_bookings: {
         Args: { people: Json; rooms: Json; target_event_id: string };
         Returns: number;

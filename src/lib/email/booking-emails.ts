@@ -3,6 +3,10 @@ import { publicEnv } from "@/lib/env";
 import { bookingMoney, netPaid } from "@/lib/bookings/money";
 import { ukToday } from "@/lib/dates";
 import {
+  NO_PRIVATE_DETAILS,
+  loadPrivateDetails,
+} from "@/lib/events/private-details";
+import {
   DOCUMENT_TITLES,
   documentFileName,
   renderDocument,
@@ -143,8 +147,8 @@ export async function loadEmailEvent(
   const { data } = await supabase
     .from("events")
     .select(
-      `title, starts_at, ends_at, balance_due_on, deposit_hold_days,
-       facebook_group_url, included, hotel_info, class_kits_info, joining_info,
+      `id, title, starts_at, ends_at, balance_due_on, deposit_hold_days,
+       included, hotel_info,
        venues (name, address, postcode, phone, parking, access_info),
        ticket_types (name, description, price_pence, deposit_pence, on_sale, starts_at, sort_order, deleted_at)`,
     )
@@ -152,17 +156,20 @@ export async function loadEmailEvent(
     .maybeSingle();
   if (!data) return null;
   const venue = data.venues;
+  const details =
+    (await loadPrivateDetails(supabase, [data.id])).get(data.id) ??
+    NO_PRIVATE_DETAILS;
   return {
     title: data.title,
     startsAt: data.starts_at,
     endsAt: data.ends_at,
     balanceDueOn: data.balance_due_on,
     depositHoldDays: data.deposit_hold_days,
-    facebookGroupUrl: data.facebook_group_url,
+    facebookGroupUrl: details.facebook_group_url,
     included: data.included,
     hotelInfo: data.hotel_info,
-    classKitsInfo: data.class_kits_info,
-    joiningInfo: data.joining_info,
+    classKitsInfo: details.class_kits_info,
+    joiningInfo: details.joining_info,
     venueName: venue?.name ?? "",
     venueAddress: venue?.address ?? "",
     venuePostcode: venue?.postcode ?? "",

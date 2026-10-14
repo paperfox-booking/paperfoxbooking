@@ -371,6 +371,9 @@ describe("copying an event", () => {
       );
       const copy = rows[0]!.id;
 
+      // The private columns can only be read through
+      // event_private_details, so check the copy as the database itself.
+      await tx.asSuperuser();
       const event = await tx.query(
         `select title, slug, status, starts_at, ends_at, balance_due_on::text,
                 booking_opens_at, deposit_hold_days, summary, included,

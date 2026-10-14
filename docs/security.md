@@ -20,9 +20,9 @@ prove them (`tests/db/`).
 - **Customers** will sign in with a code emailed to them, with no password.
   They only ever see their own bookings, and only once their email address
   is confirmed (keep **Confirm email** on in Supabase).
-- **To fix before customers can sign in:** any signed-in account can read
-  an event's Facebook group link, joining details and class kits text
-  (not visitors). These need narrowing to people booked and the team.
+- **Private event details** (the Facebook group link, joining details and
+  class kits text) are only given to the team and to people with a booking
+  on that event, not to visitors or other signed-in accounts.
 - **Everything is recorded.** Changes to events, bookings, payments, costs,
   settings and the waiting list go into an audit log with who did it and
   when. Nobody can change the log or the email log.

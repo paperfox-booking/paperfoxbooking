@@ -1,6 +1,7 @@
 import "server-only";
 import { bookingMoney, netPaid, type BookingMoney } from "@/lib/bookings/money";
 import { ukToday } from "@/lib/dates";
+import { loadPrivateDetails } from "@/lib/events/private-details";
 import type { EmailSettings } from "@/lib/email/values";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -51,12 +52,17 @@ export async function listMyBookings(userId: string): Promise<MyBooking[]> {
     .select(
       `id, reference, cancelled_at, price_pence, deposit_pence,
        ticket_types(name),
-       event:events(title, slug, starts_at, ends_at, balance_due_on, facebook_group_url, venues(name)),
+       event:events(id, title, slug, starts_at, ends_at, balance_due_on, venues(name)),
        payments(amount_pence, received_on, method, deleted_at),
        refunds(amount_pence, refunded_on, deleted_at)`,
     )
     .in("customer_id", ids);
   if (error) throw new Error(`Couldn't load your bookings: ${error.message}`);
+  // Only given for events they're booked on (not cancelled).
+  const details = await loadPrivateDetails(
+    supabase,
+    data.flatMap((booking) => (booking.event ? [booking.event.id] : [])),
+  );
   const today = ukToday();
   return data
     .filter((booking) => booking.event)
@@ -88,7 +94,7 @@ export async function listMyBookings(userId: string): Promise<MyBooking[]> {
           endsAt: event.ends_at,
           balanceDueOn: event.balance_due_on,
           venueName: event.venues?.name ?? "",
-          facebookGroupUrl: event.facebook_group_url,
+          facebookGroupUrl: details.get(event.id)?.facebook_group_url ?? null,
         },
         payments: booking.payments
           .filter((payment) => !payment.deleted_at)
