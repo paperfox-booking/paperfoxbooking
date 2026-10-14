@@ -359,9 +359,7 @@ async function Booking({
       {canSeeMoney &&
       (booking.refunds.length || (canRefund && paidPence > 0)) ? (
         <Section title="Refunds">
-          {booking.refunds.length === 0 ? (
-            <p>No refunds.</p>
-          ) : (
+          {booking.refunds.length === 0 ? null : (
             <ul className="space-y-3">
               {booking.refunds.map((refund) => {
                 const label = formatPrice(refund.amountPence);
