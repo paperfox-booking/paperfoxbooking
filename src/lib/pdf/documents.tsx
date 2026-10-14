@@ -11,7 +11,9 @@ import {
   renderToBuffer,
 } from "@react-pdf/renderer";
 import type { ReactNode } from "react";
+import type { StatementLine } from "@/lib/bookings/statement";
 import {
+  formatUkDate,
   formatUkDateRange,
   formatUkFriendlyTime,
   formatUkLongDate,
@@ -34,6 +36,7 @@ import { BEBAS_NEUE_WOFF, FOX_MARK_PNG } from "./assets";
  *   - booking details: prices, how to pay, key dates, the venue and hotel;
  *   - confirmation: their place, what's included, the Facebook group;
  *   - terms and conditions: the current version from Settings.
+ * And a statement of each booking's payments and refunds, to download.
  */
 
 Font.register({ family: "Bebas Neue", src: BEBAS_NEUE_WOFF });
@@ -521,6 +524,110 @@ export function TermsDocument({ settings }: { settings: EmailSettings }) {
       })}
     </Shell>
   );
+}
+
+export interface StatementData {
+  settings: EmailSettings;
+  event: DocumentEvent;
+  booking: EmailBooking;
+  lines: StatementLine[];
+  today: string;
+}
+
+/** Every payment and refund on a booking, with what's left to pay. */
+export function StatementDocument({
+  settings,
+  event,
+  booking,
+  lines,
+  today,
+}: StatementData) {
+  const values = placeholderValues({
+    settings,
+    event,
+    booking,
+    payment: null,
+    today,
+  });
+  const owes = booking.pricePence - booking.paidPence;
+  const amount = (pence: number) =>
+    pence < 0 ? `-${formatPrice(-pence)}` : formatPrice(pence);
+  return (
+    <Shell title="Statement" event={event} settings={settings}>
+      <View style={styles.box}>
+        <Text>
+          For <Text style={styles.bold}>{values.full_name}</Text>, booking
+          reference <Text style={styles.bold}>{booking.reference}</Text>
+        </Text>
+        {booking.optionName ? <Text>{booking.optionName}</Text> : null}
+        <Text>Made on {formatUkLongDate(`${today}T12:00:00Z`)}</Text>
+      </View>
+
+      <Text style={styles.heading}>Payments</Text>
+      {lines.length === 0 ? (
+        <Text style={styles.paragraph}>No payments yet.</Text>
+      ) : (
+        <View>
+          <View style={styles.headRow}>
+            <Text style={[styles.bold, { width: 90 }]}>Date</Text>
+            <Text style={[styles.bold, { flex: 1 }]}>Details</Text>
+            <Text style={[styles.bold, { width: 80, textAlign: "right" }]}>
+              Amount
+            </Text>
+          </View>
+          {lines.map((line, index) => (
+            <View key={index} style={styles.row} wrap={false}>
+              <Text style={{ width: 90 }}>
+                {line.date ? formatUkDate(`${line.date}T12:00:00Z`) : ""}
+              </Text>
+              <Text style={{ flex: 1 }}>{line.description}</Text>
+              <Text style={{ width: 80, textAlign: "right" }}>
+                {amount(line.amountPence)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <View style={[styles.box, { marginTop: 12 }]} wrap={false}>
+        <Text>
+          Total for the place:{" "}
+          <Text style={styles.bold}>{formatPrice(booking.pricePence)}</Text>
+        </Text>
+        <Text>
+          Paid:{" "}
+          <Text style={styles.bold}>{formatPrice(booking.paidPence)}</Text>
+        </Text>
+        {booking.cancelled ? (
+          <Text style={styles.bold}>This booking has been cancelled.</Text>
+        ) : booking.pricePence === 0 ? (
+          <Text style={styles.bold}>This is a free place.</Text>
+        ) : owes > 0 ? (
+          <Text>
+            Still to pay: <Text style={styles.bold}>{values.balance}</Text>, by{" "}
+            {values.balance_due_on}
+          </Text>
+        ) : (
+          <Text style={styles.bold}>Paid in full. Thank you.</Text>
+        )}
+      </View>
+      {!booking.cancelled && owes > 0 ? (
+        <Text style={styles.paragraph}>
+          Please pay by bank transfer, using your booking reference{" "}
+          {booking.reference}. The bank details are in your booking details.
+        </Text>
+      ) : null}
+    </Shell>
+  );
+}
+
+export async function renderStatement(data: StatementData): Promise<Buffer> {
+  return renderToBuffer(<StatementDocument {...data} />);
+}
+
+/** For example "Statement - PF-2027-0001.pdf". */
+export function statementFileName(reference: string): string {
+  return `Statement - ${reference.replace(/[^A-Z0-9-]/gi, "")}.pdf`;
 }
 
 /** Makes one of the documents as a PDF file. */

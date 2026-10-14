@@ -156,6 +156,9 @@ shows what they owe and have paid, and:
 - **Payments:** every payment, who recorded it, and **Remove** for one
   recorded by mistake (with a reason; it stays in the history);
 - **Record a payment** with the amount, date, how it was paid and a note;
+- **Download a statement of their payments** (PDF): every payment and
+  refund, with what's left to pay. Customers can download their own from
+  their account too;
 - **Emails sent:** including ones from the spreadsheet, and **Record an
   email sent outside the system**;
 - **Change the price,** with a reason (for example a discount);

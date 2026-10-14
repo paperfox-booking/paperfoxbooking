@@ -287,6 +287,16 @@ async function Booking({
 
       {canSeeMoney ? (
         <Section title="Payments">
+          <p>
+            <a
+              href={`/admin/bookings/${booking.id}/statement`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Download a statement of their payments (PDF)
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </p>
           {booking.payments.length === 0 ? (
             <p>No payments yet.</p>
           ) : (

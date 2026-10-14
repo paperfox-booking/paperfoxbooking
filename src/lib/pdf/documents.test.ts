@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { EmailSettings } from "@/lib/email/values";
+import { statementLines } from "@/lib/bookings/statement";
 import {
   documentFileName,
   renderDocument,
+  renderStatement,
+  statementFileName,
   type DocumentData,
 } from "./documents";
 
@@ -102,4 +105,71 @@ describe("the PDF documents", () => {
       "Paper Fox terms and conditions.pdf",
     );
   });
+});
+
+describe("the statement", () => {
+  const lines = statementLines(
+    [
+      {
+        amount_pence: 6000,
+        method: "bank_transfer",
+        received_on: "2026-04-02",
+        deleted_at: null,
+        created_at: "2026-04-02T10:00:00Z",
+      },
+      {
+        amount_pence: 999,
+        method: "cash",
+        received_on: "2026-04-03",
+        deleted_at: "2026-04-03T11:00:00Z",
+        created_at: "2026-04-03T10:00:00Z",
+      },
+      {
+        amount_pence: 2000,
+        method: "bank_transfer",
+        received_on: null,
+        deleted_at: null,
+        created_at: "2026-10-01T10:00:00Z",
+      },
+    ],
+    [
+      {
+        amount_pence: 1500,
+        method: "cash",
+        refunded_on: "2026-05-01",
+        deleted_at: null,
+        created_at: "2026-05-01T10:00:00Z",
+      },
+    ],
+  );
+
+  it("lists payments and refunds in date order, leaving out removed ones", () => {
+    expect(lines).toEqual([
+      {
+        date: null,
+        description: "Paid before the booking system started",
+        amountPence: 2000,
+      },
+      {
+        date: "2026-04-02",
+        description: "Payment by bank transfer",
+        amountPence: 6000,
+      },
+      { date: "2026-05-01", description: "Refund by cash", amountPence: -1500 },
+    ]);
+  });
+
+  it("makes the statement PDF, named after the reference", async () => {
+    const pdf = await renderStatement({
+      settings,
+      event: data.event,
+      booking: data.booking!,
+      lines,
+      today: "2026-10-14",
+    });
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(statementFileName("PF-2027-0001")).toBe(
+      "Statement - PF-2027-0001.pdf",
+    );
+  }, 20_000);
 });

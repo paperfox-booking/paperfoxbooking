@@ -59,3 +59,10 @@ use these once it's built.
 All in the confirmation PDF and the joining details email, from the event's
 own details. Keep **What's included**, **Hotel information** and **Joining
 details** up to date under the event's **Change details**.
+
+## "Can I have a receipt?"
+
+Open their booking and choose **Download a statement of their payments**.
+The PDF lists every payment and refund, what they've paid and what's left,
+so you can email it to them. Once customers can sign in, they can download
+it themselves from their account.

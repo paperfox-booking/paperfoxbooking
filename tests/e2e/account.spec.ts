@@ -83,6 +83,20 @@ test.describe("a customer's account @supabase", () => {
       `/account/bookings/${zoe!.id}/documents/booking-details`,
     );
     expect(theirs.status()).toBe(404);
+
+    // Her statement of payments, but not anyone else's.
+    await expect(
+      page.getByRole("link", { name: /^Statement of payments \(PDF\)/ }),
+    ).toBeVisible();
+    const statement = await page.request.get(
+      `/account/bookings/${bea!.booking_id}/statement`,
+    );
+    expect(statement.status()).toBe(200);
+    expect(statement.headers()["content-type"]).toBe("application/pdf");
+    const otherStatement = await page.request.get(
+      `/account/bookings/${zoe!.id}/statement`,
+    );
+    expect(otherStatement.status()).toBe(404);
     void testInfo;
   });
 });

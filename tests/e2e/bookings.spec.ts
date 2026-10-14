@@ -216,6 +216,15 @@ test.describe("refunds @supabase", () => {
       visibleText(page, /^Refund of £135 recorded \(bank transfer, paid back/),
     ).toBeVisible();
 
+    // The statement lists the payments and the refund.
+    const statement = await page.request.get(
+      `/admin/bookings/${booking!.id}/statement`,
+    );
+    expect(statement.headers()["content-type"]).toBe("application/pdf");
+    expect(statement.headers()["content-disposition"]).toContain(
+      "Statement%20-%20PF-",
+    );
+
     // A refund recorded by mistake can be removed, and stays in the history.
     const removal = page
       .locator("details")

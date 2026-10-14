@@ -166,6 +166,17 @@ function BookingCard({
               {formatUkDate(`${refund.refundedOn}T12:00:00Z`)}.
             </span>
           ))}
+          {booking.payments.length ? (
+            <a
+              href={`/account/bookings/${booking.id}/statement`}
+              target="_blank"
+              rel="noreferrer"
+              className="block"
+            >
+              See your statement of payments (PDF)
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          ) : null}
         </Notice>
       ) : (
         <>
@@ -279,6 +290,16 @@ function BookingCard({
             <li>
               <a href={`${docs}/terms`} target="_blank" rel="noreferrer">
                 Terms and conditions (PDF)
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+            </li>
+            <li>
+              <a
+                href={`/account/bookings/${booking.id}/statement`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Statement of payments (PDF)
                 <span className="sr-only"> (opens in a new tab)</span>
               </a>
             </li>
