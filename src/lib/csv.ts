@@ -8,7 +8,13 @@ function cell(value: string | number | boolean | null | undefined): string {
   if (value === null || value === undefined) return "";
   let text =
     typeof value === "boolean" ? (value ? "Yes" : "No") : String(value);
-  if (/^[=+\-@\t\r]/.test(text) && typeof value !== "number") {
+  // A plain amount below zero, like -25 or -12.50, is a number, not a formula.
+  const negativeAmount = /^-\d+(\.\d+)?$/.test(text);
+  if (
+    /^[=+\-@\t\r]/.test(text) &&
+    typeof value !== "number" &&
+    !negativeAmount
+  ) {
     text = `'${text}`;
   }
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;

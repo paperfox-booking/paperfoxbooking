@@ -1,5 +1,5 @@
 import "server-only";
-import { bookingMoney, sumPayments } from "@/lib/bookings/money";
+import { bookingMoney, netPaid } from "@/lib/bookings/money";
 import { toUkDateInput, ukToday } from "@/lib/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { MatchBooking } from "./match";
@@ -17,7 +17,8 @@ export async function listBookingsForMatching(): Promise<MatchBooking[]> {
       `id, reference, price_pence, deposit_pence,
        customer:customers(full_name),
        event:events!inner(title, ends_at, balance_due_on, deleted_at, status),
-       payments(amount_pence, received_on, deleted_at, created_at)`,
+       payments(amount_pence, received_on, deleted_at, created_at),
+       refunds(amount_pence, deleted_at)`,
     )
     .is("cancelled_at", null)
     .gt("events.ends_at", since)
@@ -29,7 +30,7 @@ export async function listBookingsForMatching(): Promise<MatchBooking[]> {
   return data
     .filter((booking) => booking.event && booking.price_pence > 0)
     .map((booking) => {
-      const paidPence = sumPayments(booking.payments);
+      const paidPence = netPaid(booking.payments, booking.refunds);
       const money = bookingMoney(
         {
           pricePence: booking.price_pence,

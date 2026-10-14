@@ -17,11 +17,14 @@ import {
   bookingMoney,
   sumPayments,
 } from "@/lib/bookings/money";
+import { cancellationTerms } from "@/lib/bookings/refunds";
 import {
+  daysBetween,
   formatUkDate,
   formatUkDateRange,
   formatUkDateTime,
   formatUkLongDate,
+  toUkDateInput,
   ukToday,
 } from "@/lib/dates";
 import {
@@ -34,6 +37,7 @@ import {
 } from "@/lib/email/booking-emails";
 import { emailTransport } from "@/lib/email/transport";
 import { getEvent } from "@/lib/events/admin";
+import { describeTimeBefore } from "@/lib/events/rules";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatPrice, penceToPoundsInput } from "@/lib/money";
 import {
@@ -47,8 +51,10 @@ import {
   PriceForm,
   RecordEmailForm,
   RecordPaymentForm,
+  RecordRefundForm,
   ReinstateForm,
   RemovePaymentForm,
+  RemoveRefundForm,
   SendEmailForm,
 } from "./forms";
 
@@ -58,6 +64,12 @@ const NOTICES = {
   "payment-recorded": { text: "Payment recorded." },
   "payment-removed": {
     text: "Payment removed. It's still shown in the history.",
+  },
+  "refund-recorded": {
+    text: "Refund recorded. It's been taken off what they've paid.",
+  },
+  "refund-removed": {
+    text: "Refund removed. It's still shown in the history.",
   },
   "email-recorded": { text: "Email recorded." },
   "email-sent": { text: "Email sent." },
@@ -104,12 +116,19 @@ async function Booking({
   const canEdit = can(role, "bookings.manage");
   const canSeeMoney = can(role, "payments.view");
   const today = ukToday();
-  const paidPence = sumPayments(
+  const receivedPence = sumPayments(
     booking.payments.map((payment) => ({
       amount_pence: payment.amountPence,
       deleted_at: payment.deletedAt,
     })),
   );
+  const refundedPence = sumPayments(
+    booking.refunds.map((refund) => ({
+      amount_pence: refund.amountPence,
+      deleted_at: refund.deletedAt,
+    })),
+  );
+  const paidPence = receivedPence - refundedPence;
   const money = bookingMoney(
     {
       pricePence: booking.pricePence,
@@ -134,6 +153,9 @@ async function Booking({
       : Math.max(money.balancePence, 0);
   const cancelled = booking.cancelledAt !== null;
   const canMessage = can(role, "attendees.message");
+  const canRefund = can(role, "refunds.make");
+  const refundTerms =
+    canRefund && paidPence > 0 ? await loadCancellationTerms() : [];
   // The email most likely needed next, picked in the Send an email list.
   const nextEmail: TemplateKey =
     money.state === "paid"
@@ -199,14 +221,24 @@ async function Booking({
                   ? "None: paid in full"
                   : formatPrice(booking.depositPence)}
               </Row>
-              <Row label="Paid">{formatPrice(paidPence)}</Row>
+              <Row label="Paid">
+                {refundedPence
+                  ? `${formatPrice(receivedPence)} received, less ${formatPrice(refundedPence)} refunded: ${formatPrice(paidPence)}`
+                  : formatPrice(paidPence)}
+              </Row>
               <Row label="Still to pay">
-                <span className={cn(money.overdue && "font-bold text-danger")}>
-                  {money.balancePence < 0
-                    ? `Overpaid by ${formatPrice(-money.balancePence)}`
-                    : formatPrice(money.balancePence)}
-                  {money.overdue ? " (overdue)" : null}
-                </span>
+                {cancelled ? (
+                  "Nothing: the booking is cancelled"
+                ) : (
+                  <span
+                    className={cn(money.overdue && "font-bold text-danger")}
+                  >
+                    {money.balancePence < 0
+                      ? `Overpaid by ${formatPrice(-money.balancePence)}`
+                      : formatPrice(money.balancePence)}
+                    {money.overdue ? " (overdue)" : null}
+                  </span>
+                )}
               </Row>
               <Row label="Status">{PAYMENT_STATE_LABELS[money.state]}</Row>
               <Row label="Balance due by">
@@ -291,6 +323,85 @@ async function Booking({
                 suggested={suggested ? penceToPoundsInput(suggested) : ""}
               />
             </Card>
+          ) : null}
+        </Section>
+      ) : null}
+
+      {canSeeMoney &&
+      (booking.refunds.length || (canRefund && paidPence > 0)) ? (
+        <Section title="Refunds">
+          {booking.refunds.length === 0 ? (
+            <p>No refunds.</p>
+          ) : (
+            <ul className="space-y-3">
+              {booking.refunds.map((refund) => {
+                const label = formatPrice(refund.amountPence);
+                return (
+                  <li
+                    key={refund.id}
+                    className={cn(
+                      "rounded-lg border border-cream bg-white p-4",
+                      refund.deletedAt && "text-stone",
+                    )}
+                  >
+                    <p>
+                      <strong
+                        className={cn(refund.deletedAt && "line-through")}
+                      >
+                        {label}
+                      </strong>{" "}
+                      refunded by{" "}
+                      {PAYMENT_METHOD_LABELS[refund.method]?.toLowerCase() ??
+                        refund.method}{" "}
+                      on {formatUkDate(refund.refundedOn)}. {refund.reason}
+                    </p>
+                    <p className="text-sm text-stone">
+                      Recorded by {who(refund.recordedBy)}
+                    </p>
+                    {refund.deletedAt ? (
+                      <p className="font-bold">
+                        Removed: {refund.deleteReason}
+                      </p>
+                    ) : canRefund ? (
+                      <RemoveRefundForm
+                        bookingId={booking.id}
+                        refundId={refund.id}
+                        label={label}
+                      />
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {canRefund && paidPence > 0 ? (
+            <details
+              className="rounded-2xl border border-cream bg-white p-4"
+              open={cancelled}
+            >
+              <summary className="cursor-pointer text-2xl font-bold">
+                Record a refund
+              </summary>
+              <div className="mt-3 space-y-4">
+                <RefundGuide
+                  paidPence={paidPence}
+                  depositPence={booking.depositPence}
+                  cancelledOn={
+                    booking.cancelledAt
+                      ? toUkDateInput(booking.cancelledAt)
+                      : null
+                  }
+                  today={today}
+                  eventStartsOn={toUkDateInput(booking.event.startsAt)}
+                  terms={refundTerms}
+                />
+                <RecordRefundForm
+                  bookingId={booking.id}
+                  today={today}
+                  most={formatPrice(paidPence)}
+                />
+              </div>
+            </details>
           ) : null}
         </Section>
       ) : null}
@@ -503,6 +614,75 @@ async function loadPreview(bookingId: string, key: TemplateKey) {
     prepared: prepareEmail(context, recipient, { template: key }),
     testAddress: context.settings.emailTestAddress,
   };
+}
+
+/** The current terms' section about cancelling, from Settings. */
+async function loadCancellationTerms(): Promise<string[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("settings")
+    .select("terms_text")
+    .maybeSingle();
+  return cancellationTerms(data?.terms_text ?? "");
+}
+
+/**
+ * What the team needs to decide a refund: what's been paid, how long before
+ * the event they cancelled, and what the terms say. The amount is theirs to
+ * choose.
+ */
+function RefundGuide({
+  paidPence,
+  depositPence,
+  cancelledOn,
+  today,
+  eventStartsOn,
+  terms,
+}: {
+  paidPence: number;
+  depositPence: number | null;
+  cancelledOn: string | null;
+  today: string;
+  eventStartsOn: string;
+  terms: string[];
+}) {
+  const from = cancelledOn ?? today;
+  const days = daysBetween(from, eventStartsOn);
+  const when =
+    days > 0
+      ? `${describeTimeBefore(days)} before the event starts`
+      : "after the event started";
+  return (
+    <div className="space-y-2 rounded-lg bg-cream-light p-4">
+      <p>
+        They&apos;ve paid <strong>{formatPrice(paidPence)}</strong>
+        {depositPence !== null
+          ? `, and the deposit is ${formatPrice(depositPence)}`
+          : ""}
+        .{" "}
+        {cancelledOn
+          ? `They cancelled on ${formatUkLongDate(cancelledOn)}, ${when}.`
+          : `Today is ${when}.`}
+      </p>
+      {terms.length ? (
+        <details>
+          <summary className="cursor-pointer font-bold">
+            What the terms say about cancelling
+          </summary>
+          <div className="mt-2 space-y-2">
+            {terms.map((paragraph, index) => (
+              <p key={index} className="whitespace-pre-line">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </details>
+      ) : null}
+      <p className="text-stone">
+        How much to refund is your choice. The terms are kept in Settings.
+      </p>
+    </div>
+  );
 }
 
 /** What happened about the email after a payment (?email=B2.sent). */

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectNoAccessibilityProblems } from "./accessibility";
 import { eventWithPeople } from "./data";
-import { signInAsTeam, visibleText } from "./team";
+import { signInAsTeam, sql, visibleText } from "./team";
 
 /**
  * A booking's own page, and the People list. Tagged @supabase because they
@@ -129,6 +129,109 @@ test.describe("a booking's own page @supabase", () => {
     await page.getByRole("button", { name: "Reinstate this booking" }).click();
     await expect(
       visibleText(page, "The booking has been reinstated."),
+    ).toBeVisible();
+    await expectNoAccessibilityProblems(page);
+  });
+});
+
+test.describe("refunds @supabase", () => {
+  test("an owner cancels a booking and records a refund, with the terms as a guide", async ({
+    page,
+  }, testInfo) => {
+    const { eventId, people } = await eventWithPeople();
+    const [booking] = await sql<{ id: string }>(
+      `select b.id from public.bookings b join public.customers c on c.id = b.customer_id
+        where b.event_id = $1 and c.full_name = $2`,
+      [eventId, people.bea],
+    );
+    for (const amount of [6000, 13500]) {
+      await sql(
+        "insert into public.payments (booking_id, amount_pence, received_on) values ($1, $2, '2026-09-01')",
+        [booking!.id, amount],
+      );
+    }
+    await signInAsTeam(
+      page,
+      testInfo.project.name,
+      "owner",
+      `/admin/bookings/${booking!.id}`,
+    );
+    await expect(visibleText(page, "Paid in full")).toBeVisible();
+
+    await openDetails(page, "Cancel this booking");
+    await page
+      .getByLabel("Why it's being cancelled")
+      .fill("Can't come any more");
+    await page.getByLabel("Yes, cancel this booking").check();
+    await page.getByRole("button", { name: "Cancel the booking" }).click();
+    await expect(
+      visibleText(
+        page,
+        "The booking has been cancelled and the place freed up.",
+      ),
+    ).toBeVisible();
+
+    // The refund form is open once cancelled, with what they've paid, how
+    // long before the event it is, and what the terms say.
+    await expect(
+      visibleText(page, /^They've paid £195, and the deposit is £60\./),
+    ).toBeVisible();
+    await expect(
+      visibleText(
+        page,
+        /They cancelled on .+ weeks.* before the event starts\./,
+      ),
+    ).toBeVisible();
+    await openDetails(page, "What the terms say about cancelling");
+    await expect(
+      visibleText(page, /a £60 administration fee will be retained/),
+    ).toBeVisible();
+    await expectNoAccessibilityProblems(page);
+    expect(await noSidewaysScroll(page)).toBeLessThanOrEqual(0);
+
+    // More than they paid isn't allowed.
+    const refund = page.getByLabel("Amount refunded");
+    await refund.fill("200");
+    await page.getByLabel("Why", { exact: true }).fill("Cancelled early");
+    await page.getByRole("button", { name: "Record refund" }).click();
+    await expect(
+      visibleText(
+        page,
+        "That's more than they've paid. The most you can refund is £195",
+      ),
+    ).toBeVisible();
+
+    await page.getByLabel("Amount refunded").fill("135");
+    await page
+      .getByLabel("Why", { exact: true })
+      .fill("Cancelled more than 6 weeks before, £60 fee kept");
+    await page.getByRole("button", { name: "Record refund" }).click();
+    await expect(
+      visibleText(page, "Refund recorded.", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      visibleText(page, "£195 received, less £135 refunded: £60"),
+    ).toBeVisible();
+    await expect(
+      visibleText(page, /^Refund of £135 recorded \(bank transfer, paid back/),
+    ).toBeVisible();
+
+    // A refund recorded by mistake can be removed, and stays in the history.
+    const removal = page
+      .locator("details")
+      .filter({
+        has: page.locator("summary", { hasText: "the refund of £135" }),
+        visible: true,
+      })
+      .last();
+    await removal.locator("summary").click();
+    await removal.getByLabel("Why it's being removed").fill("Wrong booking");
+    await removal
+      .getByRole("button", { name: "Remove the refund of £135" })
+      .click();
+    await expect(visibleText(page, /Refund removed\./)).toBeVisible();
+    await expect(
+      visibleText(page, "Refund of £135 removed: Wrong booking."),
     ).toBeVisible();
     await expectNoAccessibilityProblems(page);
   });

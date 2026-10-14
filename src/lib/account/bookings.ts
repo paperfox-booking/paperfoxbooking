@@ -1,9 +1,5 @@
 import "server-only";
-import {
-  bookingMoney,
-  sumPayments,
-  type BookingMoney,
-} from "@/lib/bookings/money";
+import { bookingMoney, netPaid, type BookingMoney } from "@/lib/bookings/money";
 import { ukToday } from "@/lib/dates";
 import type { EmailSettings } from "@/lib/email/values";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -38,6 +34,7 @@ export interface MyBooking {
     receivedOn: string | null;
     method: string;
   }[];
+  refunds: { amountPence: number; refundedOn: string }[];
 }
 
 export async function listMyBookings(userId: string): Promise<MyBooking[]> {
@@ -55,7 +52,8 @@ export async function listMyBookings(userId: string): Promise<MyBooking[]> {
       `id, reference, cancelled_at, price_pence, deposit_pence,
        ticket_types(name),
        event:events(title, slug, starts_at, ends_at, balance_due_on, facebook_group_url, venues(name)),
-       payments(amount_pence, received_on, method, deleted_at)`,
+       payments(amount_pence, received_on, method, deleted_at),
+       refunds(amount_pence, refunded_on, deleted_at)`,
     )
     .in("customer_id", ids);
   if (error) throw new Error(`Couldn't load your bookings: ${error.message}`);
@@ -64,7 +62,7 @@ export async function listMyBookings(userId: string): Promise<MyBooking[]> {
     .filter((booking) => booking.event)
     .map((booking) => {
       const event = booking.event!;
-      const paidPence = sumPayments(booking.payments);
+      const paidPence = netPaid(booking.payments, booking.refunds);
       return {
         id: booking.id,
         reference: booking.reference,
@@ -102,6 +100,13 @@ export async function listMyBookings(userId: string): Promise<MyBooking[]> {
           .sort((a, b) =>
             (a.receivedOn ?? "").localeCompare(b.receivedOn ?? ""),
           ),
+        refunds: booking.refunds
+          .filter((refund) => !refund.deleted_at)
+          .map((refund) => ({
+            amountPence: refund.amount_pence,
+            refundedOn: refund.refunded_on,
+          }))
+          .sort((a, b) => a.refundedOn.localeCompare(b.refundedOn)),
       };
     })
     .sort((a, b) => a.event.startsAt.localeCompare(b.event.startsAt));

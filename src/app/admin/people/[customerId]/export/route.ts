@@ -38,7 +38,8 @@ export async function GET(
           `reference, created_at, cancelled_at, cancel_reason, price_pence, deposit_pence,
            price_note, notes, payment_notes, checked_in_at,
            event:events(title, starts_at), option:ticket_types(name), room:event_rooms(name),
-           payments(amount_pence, method, received_on, note, deleted_at, delete_reason)`,
+           payments(amount_pence, method, received_on, note, deleted_at, delete_reason),
+           refunds(amount_pence, method, refunded_on, reason, deleted_at, delete_reason)`,
         )
         .eq("customer_id", customerId)
         .order("created_at"),

@@ -78,7 +78,7 @@ async function Report({
 
       <Card>
         <h2 className="text-3xl">
-          {formatPence(summary.totalPence)} from {summary.count}{" "}
+          {formatPence(summary.receivedPence)} from {summary.count}{" "}
           {summary.count === 1 ? "payment" : "payments"}
         </h2>
         <p className="mt-1">
@@ -96,10 +96,20 @@ async function Report({
             ))}
           </ul>
         ) : null}
+        {summary.refundCount ? (
+          <p className="mt-2">
+            Less <strong>{formatPence(summary.refundedPence)}</strong> paid back
+            in {summary.refundCount}{" "}
+            {summary.refundCount === 1 ? "refund" : "refunds"}, so{" "}
+            <strong>{formatPence(summary.totalPence)}</strong> in all.
+          </p>
+        ) : null}
       </Card>
 
       {summary.byDay.length === 0 ? (
-        <p>No payments arrived between these dates.</p>
+        <p>
+          No payments arrived, and nothing was refunded, between these dates.
+        </p>
       ) : (
         summary.byDay.map((group) => (
           <section
@@ -131,6 +141,7 @@ async function Report({
                   </span>
                   <span>
                     <strong>{formatPence(row.amountPence)}</strong>{" "}
+                    {row.kind === "refund" ? "refunded by " : null}
                     {(
                       PAYMENT_METHOD_LABELS[row.method] ?? row.method
                     ).toLowerCase()}

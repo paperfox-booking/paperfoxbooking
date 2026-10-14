@@ -54,10 +54,27 @@ person with no date, so they don't appear in this report.
 
 ## Refunds and cancellations
 
-Refunds are made by bank transfer outside the system. To record one, cancel
-the booking (with the reason) and note the refund in the booking's payment
-notes. Proper refund records, and credit towards a future event, come in a
-later phase.
+Refunds are made by bank transfer (or cash) outside the system, then
+recorded on the booking's page:
+
+1. **Cancel this booking**, with the reason, if they're not coming.
+2. Under **Refunds**, check the guide: what they've paid, how long before
+   the event they cancelled, and what the terms (from Settings) say. How
+   much to refund is your choice.
+3. Make the refund in online banking.
+4. **Record a refund** with the amount, the date and why.
+
+The refund comes off what they've paid, so the people list, the event's
+profit and loss and their account all show the money kept. A booking can't
+be refunded more than it's been paid. A refund recorded by mistake can be
+removed, with a reason, and stays in the history.
+
+**Reports → See payments by date** lists refunds on the day they were paid
+back, below zero, so the totals match the bank statement's money in less
+money out.
+
+Credit towards a future event, as the terms describe, isn't built yet. For
+now, note it in the booking's payment notes.
 
 ## Cards later (Stripe)
 

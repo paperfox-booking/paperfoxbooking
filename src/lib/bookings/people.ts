@@ -1,5 +1,5 @@
 import type { EmailTemplate } from "@/lib/import/booking-sheet";
-import { sumPayments } from "./money";
+import { netPaid } from "./money";
 
 /**
  * One person's row on the spreadsheet screen, and the order rows go in.
@@ -24,6 +24,7 @@ export interface PersonRow {
   notes: string;
   paymentNotes: string;
   cancelled: boolean;
+  /** Paid, less anything refunded. */
   paidPence: number;
   /** When they arrived at the event, if they have. */
   checkedInAt: string | null;
@@ -52,6 +53,7 @@ export type BookingSelect = {
     is_team: boolean;
   } | null;
   payments: { amount_pence: number; deleted_at: string | null }[];
+  refunds: { amount_pence: number; deleted_at: string | null }[];
   email_log: {
     template: string;
     sent_on: string | null;
@@ -88,7 +90,7 @@ export function toPersonRow(booking: BookingSelect): PersonRow {
     notes: booking.notes,
     paymentNotes: booking.payment_notes,
     cancelled: booking.cancelled_at !== null,
-    paidPence: sumPayments(booking.payments),
+    paidPence: netPaid(booking.payments, booking.refunds),
     checkedInAt: booking.checked_in_at,
     lastEmail: latest
       ? { template: latest.template as EmailTemplate, sentOn: latest.sent_on }

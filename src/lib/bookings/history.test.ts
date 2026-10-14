@@ -119,6 +119,41 @@ describe("describeChange", () => {
     ).toEqual(["Payment of £60 removed: Recorded twice."]);
   });
 
+  it("describes refunds recorded and removed", () => {
+    expect(
+      describeChange(
+        entry({
+          table_name: "refunds",
+          action: "insert",
+          old_values: null,
+          new_values: {
+            amount_pence: 13500,
+            method: "bank_transfer",
+            refunded_on: "2026-11-02",
+            reason: "Cancelled more than 6 weeks before",
+          },
+        }),
+        names,
+      ),
+    ).toEqual([
+      "Refund of £135 recorded (bank transfer, paid back 02/11/2026): Cancelled more than 6 weeks before.",
+    ]);
+    expect(
+      describeChange(
+        entry({
+          table_name: "refunds",
+          old_values: { amount_pence: 13500, deleted_at: null },
+          new_values: {
+            amount_pence: 13500,
+            deleted_at: "2026-11-03T10:00:00Z",
+            delete_reason: "Wrong booking",
+          },
+        }),
+        names,
+      ),
+    ).toEqual(["Refund of £135 removed: Wrong booking."]);
+  });
+
   it("leaves out changes that don't matter to the team", () => {
     expect(
       describeChange(

@@ -155,6 +155,7 @@ erDiagram
   EVENTS ||--o{ EVENT_ROOMS : "has"
   EVENTS ||--o{ EVENT_COSTS : "costs"
   BOOKINGS ||--o{ PAYMENTS : "paid by"
+  BOOKINGS ||--o{ REFUNDS : "paid back by"
   BOOKINGS ||--o{ EMAIL_LOG : "emails"
   AUTH_USERS |o--o| CUSTOMERS : "signs in as"
 
@@ -205,6 +206,17 @@ erDiagram
     timestamptz deleted_at "removed, with a reason"
     text delete_reason
   }
+  REFUNDS {
+    uuid id PK
+    uuid booking_id FK
+    integer amount_pence
+    payment_method method "how it was paid back"
+    date refunded_on
+    text reason
+    uuid recorded_by FK
+    timestamptz deleted_at "removed, with a reason"
+    text delete_reason
+  }
   EMAIL_LOG {
     uuid id PK
     uuid booking_id FK
@@ -234,6 +246,11 @@ erDiagram
   people taking the last place at the same moment can't both succeed.
 - **Payments are never edited or deleted.** A mistake is removed with a
   reason, and stays in the history.
+- **Refunds** work the same way. What someone has paid is always their
+  payments less their refunds, everywhere (the people list, emails, reports
+  and their account). A booking can never be refunded more than it's been
+  paid: the database locks the booking and refuses a refund that would, or
+  removing a payment that would leave it that way.
 - **`public.import_bookings`** brings a checked spreadsheet into an event
   with nobody booked yet, all at once or not at all. It reuses people
   already on file (matched by email).
@@ -245,18 +262,18 @@ erDiagram
 
 ### Who can do what with people and money
 
-|                                                   | Customer | Door staff | Admin | Owner |
-| ------------------------------------------------- | -------- | ---------- | ----- | ----- |
-| Read their own record, bookings and payments      | ✓        |            |       |       |
-| Read everyone's records and bookings              |          | ✓          | ✓     | ✓     |
-| Add and change people, bookings and rooms         |          |            | ✓     | ✓     |
-| Read and record payments; read and record emails  |          |            | ✓     | ✓     |
-| Check people in on the day                        |          | ✓          | ✓     | ✓     |
-| Read and change costs; read the audit log         |          |            | ✓     | ✓     |
-| Edit or delete a payment, or change the audit log |          |            |       |       |
+|                                                      | Customer | Door staff | Admin | Owner |
+| ---------------------------------------------------- | -------- | ---------- | ----- | ----- |
+| Read their own record, bookings, payments, refunds   | ✓        |            |       |       |
+| Read everyone's records and bookings                 |          | ✓          | ✓     | ✓     |
+| Add and change people, bookings and rooms            |          |            | ✓     | ✓     |
+| Read and record payments and refunds; emails         |          |            | ✓     | ✓     |
+| Check people in on the day                           |          | ✓          | ✓     | ✓     |
+| Read and change costs; read the audit log            |          |            | ✓     | ✓     |
+| Edit or delete a payment or refund, or the audit log |          |            |       |       |
 
-`tests/db/bookings.test.ts`, `tests/db/costs.test.ts` and
-`tests/db/check-in.test.ts` prove these rules.
+`tests/db/bookings.test.ts`, `tests/db/refunds.test.ts`,
+`tests/db/costs.test.ts` and `tests/db/check-in.test.ts` prove these rules.
 
 ## Settings and emails
 
@@ -345,4 +362,4 @@ Following CLAUDE.md section 6, with the changes agreed in section 15:
 | ----- | ------------------------------------------------------------------------------------ |
 | 2     | Sending the B1, B2 and B3 emails, balance reminders and chasers (`scheduled_emails`) |
 | 3     | `waitlist`, holds and expiry, `scheduled_emails`                                     |
-| 4     | `refunds` and credit                                                                 |
+| 4     | Credit towards a future event                                                        |

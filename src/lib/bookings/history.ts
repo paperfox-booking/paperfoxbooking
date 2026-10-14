@@ -2,8 +2,8 @@ import { formatUkDate } from "@/lib/dates";
 import { formatPrice } from "@/lib/money";
 
 /**
- * Turns audit log entries for a booking and its payments into plain English
- * lines for the booking's History section.
+ * Turns audit log entries for a booking, its payments and its refunds into
+ * plain English lines for the booking's History section.
  */
 
 export interface AuditEntry {
@@ -88,6 +88,24 @@ export function describeChange(
     }
     if (!before.deleted_at && after.deleted_at) {
       return [`Payment of ${amount} removed: ${String(after.delete_reason)}.`];
+    }
+    return [];
+  }
+
+  if (entry.table_name === "refunds") {
+    const amount = money(after.amount_pence ?? before.amount_pence);
+    if (entry.action === "insert") {
+      const method = METHODS[String(after.method)] ?? "refund";
+      const date =
+        typeof after.refunded_on === "string"
+          ? `, paid back ${formatUkDate(after.refunded_on)}`
+          : "";
+      return [
+        `Refund of ${amount} recorded (${method}${date}): ${String(after.reason)}.`,
+      ];
+    }
+    if (!before.deleted_at && after.deleted_at) {
+      return [`Refund of ${amount} removed: ${String(after.delete_reason)}.`];
     }
     return [];
   }

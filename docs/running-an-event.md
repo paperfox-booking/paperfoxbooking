@@ -161,6 +161,10 @@ shows what they owe and have paid, and:
 - **Change the price,** with a reason (for example a discount);
 - **Cancel this booking** (with a reason), which frees up the place, or
   **Reinstate** it;
+- **Refunds:** once you've paid money back by bank transfer, **Record a
+  refund**. A guide shows what they've paid, how long before the event they
+  cancelled and what the terms say about cancelling; the amount is your
+  choice. See `docs/payments.md`;
 - **History:** every change, when and by whom.
 
 ## Everyone on file

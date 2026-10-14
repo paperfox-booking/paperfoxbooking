@@ -33,9 +33,11 @@ balance reminder so they know what's left to pay.
 
 Follow the terms (shown in Settings): more than six weeks before, the £60
 admin fee is kept; within six weeks, nothing is refunded unless the place is
-resold. **Cancel this booking** on their page, with the reason, and make any
-refund by bank transfer. Then offer the place to the first person on the
-**waiting list**.
+resold. **Cancel this booking** on their page, with the reason. The
+**Refunds** section then shows what they've paid, how long before the event
+it is, and the terms' own words. Make any refund by bank transfer, then
+**Record a refund**. Offer the place to the first person on the **waiting
+list**.
 
 ## "Can my friend come instead?"
 

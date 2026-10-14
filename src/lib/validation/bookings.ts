@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { daysBetween } from "@/lib/dates";
+import { formatPrice } from "@/lib/money";
 import {
   checkbox,
   optionalPounds,
@@ -146,6 +147,48 @@ export const removePaymentSchema = z.object({
   reason: requiredText(
     500,
     "Say why it's being removed, for example Recorded twice",
+  ),
+});
+
+// ---------------------------------------------------------------------------
+// Refunds, made outside the system and recorded here
+// ---------------------------------------------------------------------------
+
+export const REFUND_FIELDS = [
+  "amount",
+  "refundedOn",
+  "method",
+  "reason",
+] as const;
+export type RefundField = (typeof REFUND_FIELDS)[number];
+
+/** `mostPence` is what they've paid, less earlier refunds. */
+export function refundSchema(today: string, mostPence: number) {
+  return z.object({
+    amount: requiredPounds("Enter the amount refunded, like 135")
+      .refine((pence) => pence > 0, { error: "Enter an amount more than £0" })
+      .refine((pence) => pence <= mostPence, {
+        error:
+          mostPence > 0
+            ? `That's more than they've paid. The most you can refund is ${formatPrice(mostPence)}`
+            : "They haven't paid anything that could be refunded",
+      }),
+    refundedOn: requiredDate("Enter the date the money was paid back").refine(
+      (date) => daysBetween(today, date) <= 0,
+      { error: "The date can't be in the future" },
+    ),
+    method: z.enum(PAYMENT_METHODS, { error: "Choose how it was paid back" }),
+    reason: requiredText(
+      500,
+      "Say why, for example Cancelled more than 6 weeks before",
+    ),
+  });
+}
+
+export const removeRefundSchema = z.object({
+  reason: requiredText(
+    500,
+    "Say why it's being removed, for example Recorded on the wrong booking",
   ),
 });
 

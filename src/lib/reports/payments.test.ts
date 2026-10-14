@@ -8,6 +8,7 @@ import {
 function row(partial: Partial<PaymentReportRow>): PaymentReportRow {
   return {
     id: Math.random().toString(36),
+    kind: "payment",
     receivedOn: "2026-04-02",
     amountPence: 6000,
     method: "bank_transfer",
@@ -40,6 +41,31 @@ describe("summarisePayments", () => {
     expect(summary.byDay[1]?.rows.map((r) => r.fullName)).toEqual([
       "Ann",
       "Zoe",
+    ]);
+  });
+});
+
+describe("summarisePayments with refunds", () => {
+  it("takes refunds off the total, but not off the methods' totals", () => {
+    const summary = summarisePayments([
+      row({ amountPence: 19500 }),
+      row({ amountPence: 2000, method: "cash" }),
+      row({ kind: "refund", amountPence: -13500, receivedOn: "2026-04-03" }),
+    ]);
+    expect(summary).toMatchObject({
+      totalPence: 8000,
+      receivedPence: 21500,
+      refundedPence: 13500,
+      count: 2,
+      refundCount: 1,
+    });
+    expect(summary.byMethod).toEqual([
+      { method: "bank_transfer", totalPence: 19500, count: 1 },
+      { method: "cash", totalPence: 2000, count: 1 },
+    ]);
+    expect(summary.byDay.map((day) => [day.date, day.totalPence])).toEqual([
+      ["2026-04-02", 21500],
+      ["2026-04-03", -13500],
     ]);
   });
 });

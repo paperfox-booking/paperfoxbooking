@@ -20,13 +20,16 @@ import {
   changePriceAction,
   recordEmailAction,
   recordPaymentAction,
+  recordRefundAction,
   reinstateBookingAction,
   removePaymentAction,
+  removeRefundAction,
   sendEmailAction,
   type CancelState,
   type EmailRecordState,
   type PaymentState,
   type PriceState,
+  type RefundState,
   type SendEmailState,
   type SimpleState,
 } from "../actions";
@@ -128,6 +131,115 @@ export function RemovePaymentForm({
         />
         <Button type="submit" variant="secondary" disabled={pending}>
           Remove the payment of {label}
+        </Button>
+      </form>
+    </details>
+  );
+}
+
+export function RecordRefundForm({
+  bookingId,
+  today,
+  most,
+}: {
+  bookingId: string;
+  today: string;
+  /** The most that can be refunded, for the hint. */
+  most: string;
+}) {
+  const [state, formAction, pending] = useActionState(
+    (previous: RefundState, formData: FormData) =>
+      recordRefundAction(bookingId, previous, formData),
+    {},
+  );
+  const errors = state.fieldErrors ?? {};
+  return (
+    <form action={formAction} className="space-y-4" noValidate>
+      {state.error ? <Notice tone="error">{state.error}</Notice> : null}
+      <p>
+        Make the refund in online banking first, then record it here. It comes
+        off what they&apos;ve paid, and off the event&apos;s income.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <MoneyField
+          id="refund-amount"
+          name="amount"
+          label="Amount refunded"
+          hint={`The most you can refund is ${most}.`}
+          error={errors.amount}
+          defaultValue={state.values?.amount ?? ""}
+        />
+        <TextField
+          id="refund-date"
+          name="refundedOn"
+          type="date"
+          label="Date it was paid back"
+          error={errors.refundedOn}
+          defaultValue={state.values?.refundedOn ?? today}
+          max={today}
+          className="max-w-56"
+        />
+        <SelectField
+          id="refund-method"
+          name="method"
+          label="How it was paid back"
+          error={errors.method}
+          defaultValue={state.values?.method ?? "bank_transfer"}
+        >
+          {PAYMENT_METHODS.map((method) => (
+            <option key={method} value={method}>
+              {PAYMENT_METHOD_LABELS[method]}
+            </option>
+          ))}
+        </SelectField>
+        <TextField
+          id="refund-reason"
+          name="reason"
+          label="Why"
+          hint="For example, cancelled more than 6 weeks before, £60 fee kept."
+          error={errors.reason}
+          defaultValue={state.values?.reason ?? ""}
+          maxLength={500}
+        />
+      </div>
+      <Button type="submit" disabled={pending}>
+        {pending ? "Saving…" : "Record refund"}
+      </Button>
+    </form>
+  );
+}
+
+export function RemoveRefundForm({
+  bookingId,
+  refundId,
+  label,
+}: {
+  bookingId: string;
+  refundId: string;
+  label: string;
+}) {
+  const [state, formAction, pending] = useActionState(
+    (previous: SimpleState, formData: FormData) =>
+      removeRefundAction(bookingId, refundId, previous, formData),
+    {},
+  );
+  return (
+    <details className="mt-1">
+      <summary className="cursor-pointer text-coral-deep underline">
+        Remove<span className="sr-only"> the refund of {label}</span>
+      </summary>
+      <form action={formAction} className="mt-2 space-y-3" noValidate>
+        {state.error ? <Notice tone="error">{state.error}</Notice> : null}
+        <TextField
+          id={`refund-reason-${refundId}`}
+          name="reason"
+          label="Why it's being removed"
+          hint="For example, recorded on the wrong booking. It stays in the history."
+          error={state.fieldErrors?.reason}
+          maxLength={500}
+        />
+        <Button type="submit" variant="secondary" disabled={pending}>
+          Remove the refund of {label}
         </Button>
       </form>
     </details>
@@ -248,8 +360,8 @@ export function CancelForm({ bookingId }: { bookingId: string }) {
     <form action={formAction} className="space-y-4" noValidate>
       {state.error ? <Notice tone="error">{state.error}</Notice> : null}
       <p>
-        Their place is freed up for someone else. Payments stay recorded:
-        refunds, if any, are made by bank transfer and recorded separately.
+        Their place is freed up for someone else. Payments stay recorded. If
+        they&apos;re owed a refund, record it on this page afterwards.
       </p>
       <TextField
         id="cancel-reason"

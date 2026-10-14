@@ -7,7 +7,10 @@ import { listPaymentsBetween } from "@/lib/reports/admin";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/bookings";
 import { reportDates } from "../dates";
 
-/** Payments by date as a CSV file, for checking against the bank. */
+/**
+ * Payments by date as a CSV file, for checking against the bank. Refunds are
+ * included, with the amount below zero.
+ */
 export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user?.staffRole || !can(user.staffRole, "reports.view")) {
@@ -23,7 +26,7 @@ export async function GET(request: Request) {
     ...rows.map((row) => [
       formatUkDate(`${row.receivedOn}T12:00:00Z`),
       penceToPoundsInput(row.amountPence),
-      PAYMENT_METHOD_LABELS[row.method] ?? row.method,
+      `${row.kind === "refund" ? "Refund: " : ""}${PAYMENT_METHOD_LABELS[row.method] ?? row.method}`,
       row.fullName,
       row.reference,
       row.eventTitle,

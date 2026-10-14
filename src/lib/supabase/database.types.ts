@@ -612,6 +612,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      refunds: {
+        Row: {
+          amount_pence: number;
+          booking_id: string;
+          created_at: string;
+          currency: string;
+          delete_reason: string;
+          deleted_at: string | null;
+          id: string;
+          method: Database["public"]["Enums"]["payment_method"];
+          reason: string;
+          recorded_by: string | null;
+          refunded_on: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          amount_pence: number;
+          booking_id: string;
+          created_at?: string;
+          currency?: string;
+          delete_reason?: string;
+          deleted_at?: string | null;
+          id?: string;
+          method?: Database["public"]["Enums"]["payment_method"];
+          reason: string;
+          recorded_by?: string | null;
+          refunded_on: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount_pence?: number;
+          booking_id?: string;
+          created_at?: string;
+          currency?: string;
+          delete_reason?: string;
+          deleted_at?: string | null;
+          id?: string;
+          method?: Database["public"]["Enums"]["payment_method"];
+          reason?: string;
+          recorded_by?: string | null;
+          refunded_on?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "refunds_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settings: {
         Row: {
           address: string;

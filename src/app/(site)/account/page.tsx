@@ -158,7 +158,15 @@ function BookingCard({
       </div>
 
       {booking.cancelled ? (
-        <Notice tone="error">This booking has been cancelled.</Notice>
+        <Notice tone="error">
+          This booking has been cancelled.
+          {booking.refunds.map((refund, index) => (
+            <span key={index} className="block">
+              We refunded {formatPrice(refund.amountPence)} on{" "}
+              {formatUkDate(`${refund.refundedOn}T12:00:00Z`)}.
+            </span>
+          ))}
+        </Notice>
       ) : (
         <>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
@@ -223,6 +231,12 @@ function BookingCard({
                     {(
                       PAYMENT_METHOD_LABELS[payment.method] ?? payment.method
                     ).toLowerCase()}
+                  </li>
+                ))}
+                {booking.refunds.map((refund, index) => (
+                  <li key={`refund-${index}`}>
+                    {formatPrice(refund.amountPence)} refunded on{" "}
+                    {formatUkDate(`${refund.refundedOn}T12:00:00Z`)}
                   </li>
                 ))}
               </ul>

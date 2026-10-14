@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { staffWithPermission } from "@/lib/auth/session";
 import { getPersonRow, type PersonRow } from "@/lib/bookings/admin";
+import { netPaid } from "@/lib/bookings/money";
 import { toUkDateInput } from "@/lib/dates";
 import { isTemplateKey, sendBookingEmail } from "@/lib/email/booking-emails";
 import { emailAfterRecordingPayment } from "@/lib/email/payment-emails";
@@ -17,6 +18,7 @@ import {
   PAYMENT_FIELDS,
   PERSON_CELLS,
   PRICE_FIELDS,
+  REFUND_FIELDS,
   addPersonSchema,
   cancelSchema,
   cellSchemas,
@@ -24,12 +26,15 @@ import {
   isCell,
   paymentSchema,
   priceSchema,
+  refundSchema,
   removePaymentSchema,
+  removeRefundSchema,
   type AddPersonField,
   type CancelField,
   type EmailRecordField,
   type PaymentField,
   type PriceField,
+  type RefundField,
 } from "@/lib/validation/bookings";
 import {
   fieldErrorsFrom,
@@ -347,6 +352,84 @@ export async function removePaymentAction(
   if (error) return { error: friendlyDatabaseError(error) };
   if (count === 0) return { error: "That payment has already been removed." };
   redirect(`/admin/bookings/${bookingId}?notice=payment-removed`);
+}
+
+export type RefundState = FormState<RefundField>;
+
+/** Records money paid back to someone (by bank transfer or cash). */
+export async function recordRefundAction(
+  bookingId: string,
+  _previous: RefundState,
+  formData: FormData,
+): Promise<RefundState> {
+  const values = readForm(formData, REFUND_FIELDS);
+  if (!(await staffWithPermission("refunds.make"))) {
+    return {
+      values,
+      error: "You need to be an owner or admin to record refunds.",
+    };
+  }
+  const supabase = await createSupabaseServerClient();
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select(
+      "id, payments(amount_pence, deleted_at), refunds(amount_pence, deleted_at)",
+    )
+    .eq("id", bookingId)
+    .maybeSingle();
+  if (!booking) return { values, error: "That booking couldn't be found." };
+
+  const parsed = refundSchema(
+    today(),
+    netPaid(booking.payments, booking.refunds),
+  ).safeParse(values);
+  if (!parsed.success) {
+    return { values, fieldErrors: fieldErrorsFrom(parsed.error) };
+  }
+  // The database checks again, with the booking locked, in case someone
+  // else recorded a refund at the same moment.
+  const { error } = await supabase.from("refunds").insert({
+    booking_id: bookingId,
+    amount_pence: parsed.data.amount,
+    refunded_on: parsed.data.refundedOn,
+    method: parsed.data.method,
+    reason: parsed.data.reason,
+  });
+  if (error) return { values, error: friendlyDatabaseError(error) };
+  redirect(`/admin/bookings/${bookingId}?notice=refund-recorded`);
+}
+
+export async function removeRefundAction(
+  bookingId: string,
+  refundId: string,
+  _previous: SimpleState,
+  formData: FormData,
+): Promise<SimpleState> {
+  if (!(await staffWithPermission("refunds.make"))) {
+    return { error: "You need to be an owner or admin to remove refunds." };
+  }
+  const parsed = removeRefundSchema.safeParse({
+    reason: String(formData.get("reason") ?? ""),
+  });
+  if (!parsed.success) {
+    return { fieldErrors: { reason: parsed.error.issues[0]!.message } };
+  }
+  const supabase = await createSupabaseServerClient();
+  const { error, count } = await supabase
+    .from("refunds")
+    .update(
+      {
+        deleted_at: new Date().toISOString(),
+        delete_reason: parsed.data.reason,
+      },
+      { count: "exact" },
+    )
+    .eq("id", refundId)
+    .eq("booking_id", bookingId)
+    .is("deleted_at", null);
+  if (error) return { error: friendlyDatabaseError(error) };
+  if (count === 0) return { error: "That refund has already been removed." };
+  redirect(`/admin/bookings/${bookingId}?notice=refund-removed`);
 }
 
 export type EmailRecordState = FormState<EmailRecordField>;

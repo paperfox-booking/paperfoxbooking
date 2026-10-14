@@ -9,7 +9,7 @@ import { signInAsTeam, sql, visibleText } from "./team";
  */
 
 test.describe("payments by date @supabase", () => {
-  test("an owner sees payments by day and method, and downloads them", async ({
+  test("an owner sees payments and refunds by day and method, and downloads them", async ({
     page,
   }, testInfo) => {
     const { eventId, people } = await eventWithPeople();
@@ -26,10 +26,19 @@ test.describe("payments by date @supabase", () => {
       [`${month}-01`, `${month}-28`],
     );
     await sql(
+      "delete from public.refunds where refunded_on between $1 and $2",
+      [`${month}-01`, `${month}-28`],
+    );
+    await sql(
       `insert into public.payments (booking_id, amount_pence, method, received_on, note) values
          ($1, 6000, 'bank_transfer', $2, 'Deposit'),
          ($1, 2000, 'cash', $3, '')`,
       [zoe!.id, `${month}-10`, `${month}-11`],
+    );
+    await sql(
+      `insert into public.refunds (booking_id, amount_pence, refunded_on, reason)
+       values ($1, 2500, $2, 'Paid too much')`,
+      [zoe!.id, `${month}-12`],
     );
 
     await signInAsTeam(
@@ -43,6 +52,14 @@ test.describe("payments by date @supabase", () => {
     ).toBeVisible();
     await expect(visibleText(page, /Bank transfer: £60\.00/)).toBeVisible();
     await expect(visibleText(page, /Cash: £20\.00/)).toBeVisible();
+    // Refunds are money going out, so they come off the total.
+    await expect(
+      visibleText(page, "Less £25.00 paid back in 1 refund, so £55.00 in all."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /: -£25\.00$/ }),
+    ).toBeVisible();
+    await expect(visibleText(page, "refunded by bank transfer")).toBeVisible();
     await expect(
       page.getByRole("heading", { name: /: £60\.00$/ }),
     ).toBeVisible();
@@ -54,6 +71,9 @@ test.describe("payments by date @supabase", () => {
     const text = await csv.text();
     expect(text).toContain(
       `10/${month.slice(5)}/2020,60,Bank transfer,${people.zoe}`,
+    );
+    expect(text).toContain(
+      `12/${month.slice(5)}/2020,-25,Refund: Bank transfer,${people.zoe}`,
     );
   });
 });

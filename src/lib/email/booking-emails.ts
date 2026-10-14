@@ -1,6 +1,6 @@
 import "server-only";
 import { publicEnv } from "@/lib/env";
-import { bookingMoney, sumPayments } from "@/lib/bookings/money";
+import { bookingMoney, netPaid } from "@/lib/bookings/money";
 import { ukToday } from "@/lib/dates";
 import {
   DOCUMENT_TITLES,
@@ -192,7 +192,8 @@ export async function loadEmailRecipient(
       `id, reference, event_id, price_pence, deposit_pence, cancelled_at, created_at,
        customers (full_name, email),
        ticket_types (name),
-       payments (amount_pence, received_on, deleted_at, created_at)`,
+       payments (amount_pence, received_on, deleted_at, created_at),
+       refunds (amount_pence, deleted_at)`,
     )
     .eq("id", bookingId)
     .maybeSingle();
@@ -214,7 +215,7 @@ export async function loadEmailRecipient(
       optionName: data.ticket_types?.name ?? "",
       pricePence: data.price_pence,
       depositPence: data.deposit_pence,
-      paidPence: sumPayments(data.payments),
+      paidPence: netPaid(data.payments, data.refunds),
       cancelled: data.cancelled_at !== null,
       createdAt: data.created_at,
     },

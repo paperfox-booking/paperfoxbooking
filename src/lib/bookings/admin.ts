@@ -31,6 +31,7 @@ const BOOKING_COLUMNS = `
   price_note, notes, payment_notes, cancelled_at, checked_in_at,
   customer:customers(id, full_name, email, phone, emergency_contact, dietary_health, is_team),
   payments(amount_pence, deleted_at),
+  refunds(amount_pence, deleted_at),
   email_log(template, sent_on, created_at, status)
 `;
 
@@ -131,6 +132,16 @@ export interface BookingDetail {
     deletedAt: string | null;
     deleteReason: string;
   }[];
+  refunds: {
+    id: string;
+    amountPence: number;
+    method: string;
+    refundedOn: string;
+    reason: string;
+    recordedBy: string | null;
+    deletedAt: string | null;
+    deleteReason: string;
+  }[];
   emails: {
     id: string;
     template: string;
@@ -162,6 +173,7 @@ export async function getBookingDetail(
        event:events(id, title, starts_at, ends_at, balance_due_on),
        customer:customers(id, full_name, email, phone),
        payments(id, amount_pence, method, received_on, note, recorded_by, deleted_at, delete_reason, created_at),
+       refunds(id, amount_pence, method, refunded_on, reason, recorded_by, deleted_at, delete_reason, created_at),
        email_log(id, template, subject, to_email, attachments, status, error, sent_on, sent_at, note, outside_system, created_by, created_at)`,
     )
     .eq("id", bookingId)
@@ -170,23 +182,31 @@ export async function getBookingDetail(
   if (!booking || !booking.event || !booking.customer) return null;
 
   const paymentIds = booking.payments.map((payment) => payment.id);
+  const refundIds = booking.refunds.map((refund) => refund.id);
   const { data: audit } = await supabase
     .from("audit_log")
     .select(
       "table_name, action, old_values, new_values, changed_at, changed_by",
     )
     .or(
-      `and(table_name.eq.bookings,record_id.eq.${booking.id})${
-        paymentIds.length
-          ? `,and(table_name.eq.payments,record_id.in.(${paymentIds.join(",")}))`
-          : ""
-      }`,
+      [
+        `and(table_name.eq.bookings,record_id.eq.${booking.id})`,
+        ...(paymentIds.length
+          ? [
+              `and(table_name.eq.payments,record_id.in.(${paymentIds.join(",")}))`,
+            ]
+          : []),
+        ...(refundIds.length
+          ? [`and(table_name.eq.refunds,record_id.in.(${refundIds.join(",")}))`]
+          : []),
+      ].join(","),
     )
     .order("changed_at", { ascending: false })
     .limit(200);
 
   const staffIds = [
     ...booking.payments.map((payment) => payment.recorded_by),
+    ...booking.refunds.map((refund) => refund.recorded_by),
     ...booking.email_log.map((email) => email.created_by),
     ...(audit ?? []).map((entry) => entry.changed_by),
   ].filter((id): id is string => Boolean(id));
@@ -239,6 +259,22 @@ export async function getBookingDetail(
         recordedBy: payment.recorded_by,
         deletedAt: payment.deleted_at,
         deleteReason: payment.delete_reason,
+      })),
+    refunds: [...booking.refunds]
+      .sort((a, b) =>
+        `${a.refunded_on}${a.created_at}`.localeCompare(
+          `${b.refunded_on}${b.created_at}`,
+        ),
+      )
+      .map((refund) => ({
+        id: refund.id,
+        amountPence: refund.amount_pence,
+        method: refund.method,
+        refundedOn: refund.refunded_on,
+        reason: refund.reason,
+        recordedBy: refund.recorded_by,
+        deletedAt: refund.deleted_at,
+        deleteReason: refund.delete_reason,
       })),
     emails: [...booking.email_log]
       .sort((a, b) =>

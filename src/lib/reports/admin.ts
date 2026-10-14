@@ -1,5 +1,5 @@
 import "server-only";
-import { sumPayments } from "@/lib/bookings/money";
+import { netPaid } from "@/lib/bookings/money";
 import { allRows } from "@/lib/supabase/all-rows";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { PaymentReportRow } from "./payments";
@@ -37,7 +37,7 @@ export interface EventProfit {
 
 const COLUMNS = `
   id, title, starts_at, ends_at, status, capacity, balance_due_on,
-  bookings(price_pence, cancelled_at, ticket_type_id, payments(amount_pence, deleted_at)),
+  bookings(price_pence, cancelled_at, ticket_type_id, payments(amount_pence, deleted_at), refunds(amount_pence, deleted_at)),
   event_costs(amount_pence, paid, category, deleted_at)
 `;
 
@@ -54,6 +54,7 @@ type EventSelect = {
     cancelled_at: string | null;
     ticket_type_id: string | null;
     payments: { amount_pence: number; deleted_at: string | null }[];
+    refunds: { amount_pence: number; deleted_at: string | null }[];
   }[];
   event_costs: {
     amount_pence: number;
@@ -66,7 +67,7 @@ type EventSelect = {
 function toEventProfit(event: EventSelect): EventProfit {
   const bookings = event.bookings.map((booking) => ({
     pricePence: booking.price_pence,
-    paidPence: sumPayments(booking.payments),
+    paidPence: netPaid(booking.payments, booking.refunds),
     cancelled: booking.cancelled_at !== null,
     optionId: booking.ticket_type_id,
   }));
@@ -175,35 +176,69 @@ export async function getCost(costId: string): Promise<CostRow | null> {
     : null;
 }
 
-/** Payments received between two UK dates (inclusive), not removed ones. */
+/**
+ * Payments received, and refunds paid back, between two UK dates
+ * (inclusive). Removed ones are left out.
+ */
 export async function listPaymentsBetween(
   from: string,
   to: string,
 ): Promise<PaymentReportRow[]> {
   const supabase = await createSupabaseServerClient();
-  const data = await allRows((start, end) =>
-    supabase
-      .from("payments")
-      .select(
-        `id, received_on, amount_pence, method, note,
-         booking:bookings(id, reference, customer:customers(full_name), event:events(title))`,
-      )
-      .is("deleted_at", null)
-      .gte("received_on", from)
-      .lte("received_on", to)
-      .order("received_on")
-      .order("id")
-      .range(start, end),
-  );
-  return data.map((payment) => ({
-    id: payment.id,
-    receivedOn: payment.received_on!,
-    amountPence: payment.amount_pence,
-    method: payment.method,
-    note: payment.note,
-    bookingId: payment.booking?.id ?? "",
-    reference: payment.booking?.reference ?? "",
-    fullName: payment.booking?.customer?.full_name ?? "",
-    eventTitle: payment.booking?.event?.title ?? "",
-  }));
+  const [payments, refunds] = await Promise.all([
+    allRows((start, end) =>
+      supabase
+        .from("payments")
+        .select(
+          `id, received_on, amount_pence, method, note,
+           booking:bookings(id, reference, customer:customers(full_name), event:events(title))`,
+        )
+        .is("deleted_at", null)
+        .gte("received_on", from)
+        .lte("received_on", to)
+        .order("received_on")
+        .order("id")
+        .range(start, end),
+    ),
+    allRows((start, end) =>
+      supabase
+        .from("refunds")
+        .select(
+          `id, refunded_on, amount_pence, method, reason,
+           booking:bookings(id, reference, customer:customers(full_name), event:events(title))`,
+        )
+        .is("deleted_at", null)
+        .gte("refunded_on", from)
+        .lte("refunded_on", to)
+        .order("refunded_on")
+        .order("id")
+        .range(start, end),
+    ),
+  ]);
+  return [
+    ...payments.map((payment) => ({
+      id: payment.id,
+      kind: "payment" as const,
+      receivedOn: payment.received_on!,
+      amountPence: payment.amount_pence,
+      method: payment.method,
+      note: payment.note,
+      bookingId: payment.booking?.id ?? "",
+      reference: payment.booking?.reference ?? "",
+      fullName: payment.booking?.customer?.full_name ?? "",
+      eventTitle: payment.booking?.event?.title ?? "",
+    })),
+    ...refunds.map((refund) => ({
+      id: refund.id,
+      kind: "refund" as const,
+      receivedOn: refund.refunded_on,
+      amountPence: -refund.amount_pence,
+      method: refund.method,
+      note: refund.reason,
+      bookingId: refund.booking?.id ?? "",
+      reference: refund.booking?.reference ?? "",
+      fullName: refund.booking?.customer?.full_name ?? "",
+      eventTitle: refund.booking?.event?.title ?? "",
+    })),
+  ].sort((a, b) => a.receivedOn.localeCompare(b.receivedOn));
 }
