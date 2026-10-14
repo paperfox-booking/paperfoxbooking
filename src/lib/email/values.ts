@@ -67,6 +67,12 @@ export interface EmailPayment {
   receivedOn: string | null;
 }
 
+export interface EmailRefund {
+  amountPence: number;
+  /** "YYYY-MM-DD". */
+  refundedOn: string;
+}
+
 /** The first word of a name, for "Hello Jo". */
 export function firstName(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] ?? "";
@@ -125,12 +131,15 @@ export function placeholderValues({
   event,
   booking,
   payment,
+  refund = null,
   today,
 }: {
   settings: EmailSettings;
   event: EmailEvent;
   booking: EmailBooking;
   payment: EmailPayment | null;
+  /** The latest refund, for the refund email. */
+  refund?: EmailRefund | null;
   today: string;
 }): PlaceholderValues {
   const money = bookingMoney(
@@ -160,6 +169,8 @@ export function placeholderValues({
     balance_due_on: longDate(event.balanceDueOn),
     amount_received: payment ? formatPrice(payment.amountPence) : "",
     received_on: payment?.receivedOn ? longDate(payment.receivedOn) : "",
+    amount_refunded: refund ? formatPrice(refund.amountPence) : "",
+    refunded_on: refund ? longDate(refund.refundedOn) : "",
     bank_details: bankDetails(settings, booking.reference),
     facebook_group: event.facebookGroupUrl ?? "",
     class_kits_info: event.classKitsInfo.trim(),

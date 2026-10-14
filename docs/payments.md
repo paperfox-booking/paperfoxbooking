@@ -63,6 +63,8 @@ recorded on the booking's page:
    much to refund is your choice.
 3. Make the refund in online banking.
 4. **Record a refund** with the amount, the date and why.
+5. Under **Send an email**, send **Refund sent** to let them know. **Booking
+   cancelled** confirms the cancellation itself.
 
 The refund comes off what they've paid, so the people list, the event's
 profit and loss and their account all show the money kept. A booking can't

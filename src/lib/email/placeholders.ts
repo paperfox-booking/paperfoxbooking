@@ -43,6 +43,11 @@ export const PLACEHOLDERS = [
   },
   { name: "received_on", description: "The date that payment arrived" },
   {
+    name: "amount_refunded",
+    description: "Their latest refund (for the refund email)",
+  },
+  { name: "refunded_on", description: "The date that refund was paid back" },
+  {
     name: "bank_details",
     description: "Paper Fox's bank details, with their reference to use",
   },

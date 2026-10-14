@@ -254,4 +254,68 @@ test.describe("emails @supabase", () => {
       preview.getByRole("listitem").filter({ hasText: "Bring your own lamp" }),
     ).toBeVisible();
   });
+  test("a cancelled booking is sent the cancellation and refund emails", async ({
+    page,
+  }, testInfo) => {
+    const { eventId, people } = await eventWithPeople();
+    const [booking] = await sql<{ id: string }>(
+      `select b.id from public.bookings b join public.customers c on c.id = b.customer_id
+       where b.event_id = $1 and c.full_name = $2`,
+      [eventId, people.bea],
+    );
+    await sql(
+      "insert into public.payments (booking_id, amount_pence, received_on) values ($1, 19500, '2026-09-01')",
+      [booking!.id],
+    );
+    await sql(
+      "update public.bookings set cancelled_at = now(), cancel_reason = 'Can''t come' where id = $1",
+      [booking!.id],
+    );
+    await sql(
+      "insert into public.refunds (booking_id, amount_pence, refunded_on, reason) values ($1, 13500, '2026-10-02', 'Cancelled, £60 fee kept')",
+      [booking!.id],
+    );
+    await signInAsTeam(
+      page,
+      testInfo.project.name,
+      "admin",
+      `/admin/bookings/${booking!.id}`,
+    );
+
+    // Only the emails for a cancelled booking are offered, refund first.
+    const choice = page.getByLabel("Email to send");
+    await expect(choice).toHaveValue("refund");
+    await expect(choice.locator("option")).toHaveText([
+      "Booking cancelled",
+      "Refund sent",
+    ]);
+    await page.getByRole("button", { name: "Preview" }).click();
+    await expect(
+      page
+        .frameLocator("iframe")
+        .getByText(/We've refunded £135 to you on Friday 2 October 2026/),
+    ).toBeVisible();
+    await expectNoAccessibilityProblems(page);
+    const started = new Date();
+    await page.getByRole("button", { name: "Send Refund sent" }).click();
+    await expect(visibleText(page, "Email sent.")).toBeVisible();
+    const refund = await waitForEmail(
+      emailOf(people.bea),
+      /your refund is on its way/,
+      started,
+    );
+    expect(refund.Text).toContain("Hello Bea");
+    expect(refund.Attachments).toEqual([]);
+
+    await page.getByLabel("Email to send").selectOption("cancelled");
+    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Send Booking cancelled" }).click();
+    await expect(visibleText(page, "Email sent.")).toBeVisible();
+    const cancelled = await waitForEmail(
+      emailOf(people.bea),
+      /your booking has been cancelled/,
+      started,
+    );
+    expect(cancelled.Text).toContain("has been cancelled");
+  });
 });

@@ -204,6 +204,8 @@ export const EMAIL_TEMPLATES = [
   "balance_reminder",
   "class_kits",
   "joining",
+  "cancelled",
+  "refund",
   "other",
 ] as const;
 export const EMAIL_TEMPLATE_LABELS: Record<
@@ -217,6 +219,8 @@ export const EMAIL_TEMPLATE_LABELS: Record<
   balance_reminder: "Balance reminder",
   class_kits: "Class kits",
   joining: "Joining details",
+  cancelled: "Booking cancelled",
+  refund: "Refund sent",
   other: "Other",
 };
 

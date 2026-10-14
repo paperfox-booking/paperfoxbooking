@@ -233,6 +233,32 @@ describe("values for a booking", () => {
   });
 });
 
+describe("values for a refund", () => {
+  it("fills in the latest refund, or nothing without one", () => {
+    const base = {
+      settings,
+      event,
+      booking: { ...booking, cancelled: true, paidPence: 6000 },
+      payment: null,
+      today: "2026-10-14",
+    };
+    expect(
+      placeholderValues({
+        ...base,
+        refund: { amountPence: 13500, refundedOn: "2026-10-02" },
+      }),
+    ).toMatchObject({
+      amount_refunded: "£135",
+      refunded_on: "Friday 2 October 2026",
+      paid: "£60",
+    });
+    expect(placeholderValues(base)).toMatchObject({
+      amount_refunded: "",
+      refunded_on: "",
+    });
+  });
+});
+
 describe("composeEmail", () => {
   it("fills in the wording and warns about anything missing", () => {
     const values = placeholderValues({

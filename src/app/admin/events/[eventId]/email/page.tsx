@@ -6,7 +6,11 @@ import { NotAllowed } from "@/components/admin/not-allowed";
 import { requireStaff } from "@/lib/auth/session";
 import { listEventPeople } from "@/lib/bookings/admin";
 import { formatUkDateRange, ukToday } from "@/lib/dates";
-import { listTemplates, loadSettingsRow } from "@/lib/email/booking-emails";
+import {
+  ONE_BOOKING_TEMPLATES,
+  listTemplates,
+  loadSettingsRow,
+} from "@/lib/email/booking-emails";
 import { emailTransport } from "@/lib/email/transport";
 import { getEvent } from "@/lib/events/admin";
 import { allRows } from "@/lib/supabase/all-rows";
@@ -90,10 +94,18 @@ async function EmailPeople({
           paidPence: row.paidPence,
           sentTemplates: [...(had.get(row.bookingId) ?? [])],
         }))}
-        templates={templates.map((template) => ({
-          key: template.key,
-          name: template.name,
-        }))}
+        templates={templates
+          // Cancellation and refund emails are sent from a booking's page.
+          .filter(
+            (template) =>
+              !(ONE_BOOKING_TEMPLATES as readonly string[]).includes(
+                template.key,
+              ),
+          )
+          .map((template) => ({
+            key: template.key,
+            name: template.name,
+          }))}
         balanceDueOn={event.balance_due_on}
         today={ukToday()}
         transport={emailTransport()}

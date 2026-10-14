@@ -17,6 +17,7 @@ import {
   placeholderValues,
   type EmailBooking,
   type EmailPayment,
+  type EmailRefund,
   type EmailSettings,
 } from "./values";
 
@@ -37,8 +38,16 @@ export const TEMPLATE_KEYS = [
   "balance_reminder",
   "class_kits",
   "joining",
+  "cancelled",
+  "refund",
 ] as const;
 export type TemplateKey = (typeof TEMPLATE_KEYS)[number];
+
+/** About one booking's cancellation or refund, so not offered on Email people. */
+export const ONE_BOOKING_TEMPLATES: readonly TemplateKey[] = [
+  "cancelled",
+  "refund",
+];
 
 export function isTemplateKey(value: unknown): value is TemplateKey {
   return (
@@ -180,6 +189,7 @@ export interface EmailRecipient {
   email: string | null;
   booking: EmailBooking;
   lastPayment: EmailPayment | null;
+  lastRefund: EmailRefund | null;
 }
 
 export async function loadEmailRecipient(
@@ -193,7 +203,7 @@ export async function loadEmailRecipient(
        customers (full_name, email),
        ticket_types (name),
        payments (amount_pence, received_on, deleted_at, created_at),
-       refunds (amount_pence, deleted_at)`,
+       refunds (amount_pence, refunded_on, deleted_at, created_at)`,
     )
     .eq("id", bookingId)
     .maybeSingle();
@@ -202,12 +212,22 @@ export async function loadEmailRecipient(
     .filter((payment) => !payment.deleted_at)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
   const last = payments.at(-1);
+  const lastRefund = data.refunds
+    .filter((refund) => !refund.deleted_at)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .at(-1);
   return {
     bookingId: data.id,
     eventId: data.event_id,
     email: data.customers?.email ?? null,
     lastPayment: last
       ? { amountPence: last.amount_pence, receivedOn: last.received_on }
+      : null,
+    lastRefund: lastRefund
+      ? {
+          amountPence: lastRefund.amount_pence,
+          refundedOn: lastRefund.refunded_on,
+        }
       : null,
     booking: {
       reference: data.reference,
@@ -313,6 +333,7 @@ export function prepareEmail(
       event,
       booking: recipient.booking,
       payment,
+      refund: recipient.lastRefund,
       today: ukToday(),
     }),
     business: settings,
@@ -328,7 +349,16 @@ export function prepareEmail(
       `${recipient.booking.fullName || "This person"} has no email address. Add one on the people list.`,
     );
   }
-  if (recipient.booking.cancelled) {
+  const key = "template" in choice ? choice.template : null;
+  if (key === "cancelled") {
+    if (!recipient.booking.cancelled) {
+      problems.push("This booking isn't cancelled.");
+    }
+  } else if (key === "refund") {
+    if (!recipient.lastRefund) {
+      problems.push("There's no refund recorded on this booking yet.");
+    }
+  } else if (recipient.booking.cancelled) {
     problems.push("This booking is cancelled.");
   }
 

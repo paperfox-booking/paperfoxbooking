@@ -23,6 +23,8 @@ export type EmailTemplate =
   | "balance_reminder"
   | "class_kits"
   | "joining"
+  | "cancelled"
+  | "refund"
   | "other";
 
 export interface SheetOption {

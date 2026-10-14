@@ -48,6 +48,10 @@ const TEMPLATE_SHORT: Record<string, string> = {
   B3: "B3",
   thanks: "Thanks",
   balance_reminder: "Reminder",
+  class_kits: "Class kits",
+  joining: "Joining",
+  cancelled: "Cancelled",
+  refund: "Refund",
   other: "Other",
 };
 

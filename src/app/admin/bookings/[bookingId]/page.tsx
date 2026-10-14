@@ -28,6 +28,7 @@ import {
   ukToday,
 } from "@/lib/dates";
 import {
+  ONE_BOOKING_TEMPLATES,
   TEMPLATE_KEYS,
   isTemplateKey,
   loadEmailContext,
@@ -156,9 +157,18 @@ async function Booking({
   const canRefund = can(role, "refunds.make");
   const refundTerms =
     canRefund && paidPence > 0 ? await loadCancellationTerms() : [];
+  const hasRefund = booking.refunds.some((refund) => !refund.deletedAt);
+  // A cancelled booking can only be sent the cancellation and refund emails;
+  // the cancellation email is only for a cancelled booking.
+  const emailChoices = TEMPLATE_KEYS.filter((key) =>
+    cancelled ? ONE_BOOKING_TEMPLATES.includes(key) : key !== "cancelled",
+  );
   // The email most likely needed next, picked in the Send an email list.
-  const nextEmail: TemplateKey =
-    money.state === "paid"
+  const nextEmail: TemplateKey = cancelled
+    ? hasRefund
+      ? "refund"
+      : "cancelled"
+    : money.state === "paid"
       ? "B3"
       : money.state === "deposit_paid" || money.state === "part_paid"
         ? "balance_reminder"
@@ -464,7 +474,7 @@ async function Booking({
               })}
             </ul>
           )}
-          {canMessage && !cancelled ? (
+          {canMessage ? (
             <Card id="send-email">
               <h3 className="mb-3 text-2xl">Send an email</h3>
               {emailTransport() === "off" ? (
@@ -488,7 +498,7 @@ async function Booking({
                     defaultValue={previewKey ?? nextEmail}
                     className="max-w-sm"
                   >
-                    {TEMPLATE_KEYS.map((key) => (
+                    {emailChoices.map((key) => (
                       <option key={key} value={key}>
                         {EMAIL_TEMPLATE_LABELS[key]}
                       </option>

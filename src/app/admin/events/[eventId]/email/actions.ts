@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { staffWithPermission } from "@/lib/auth/session";
 import {
+  ONE_BOOKING_TEMPLATES,
   TEMPLATE_KEYS,
   loadEmailContext,
   loadEmailRecipient,
@@ -18,7 +19,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 const BATCH = 5;
 
 const choiceSchema = z.union([
-  z.object({ template: z.enum(TEMPLATE_KEYS) }),
+  z.object({
+    template: z
+      .enum(TEMPLATE_KEYS)
+      .refine((key) => !ONE_BOOKING_TEMPLATES.includes(key), {
+        error: "Send that email from the person's booking page",
+      }),
+  }),
   z.object({
     custom: z.object({
       subject: z

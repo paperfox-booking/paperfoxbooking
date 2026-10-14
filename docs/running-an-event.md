@@ -285,6 +285,10 @@ Open their booking, choose the email under **Send an email**, then
 **Emails sent** lists everything sent, and anything that couldn't be sent,
 with the reason.
 
+Once a booking is cancelled, only two emails are offered there: **Booking
+cancelled**, to confirm it, and **Refund sent**, once you've recorded a
+refund (it fills in the amount and the date).
+
 ### To everyone on an event
 
 Open the event and choose **Email people**:
