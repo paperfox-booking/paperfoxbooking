@@ -610,7 +610,7 @@ George asked to start building straight away and answer these later. Until he do
 | 8 | Paying in parts allowed? | Yes: staff record any amount |
 | 9 | Cancelling more than 6 weeks before: keep £60, or the whole deposit? | Staff choose the refund amount, with the terms shown as a guide (built: Record a refund on a booking's page) |
 | 10 | What happens if the balance isn't paid by the due date | Shown as overdue for staff to chase. Nothing automatic |
-| 11 | Is "Thkd for Pmt" a separate email? | A "balance paid" email, the same as B3 |
+| 11 | Is "Thkd for Pmt" a separate email? | Built: B3 goes when they've paid in full; B2 when the deposit is covered; a separate "thanks for your payment" email for any other payment |
 | 12 | Other spreadsheets to import, and when to import March 2027 | Import is a later task |
 | 13 | VAT registered? (section 13, question 6) | Not VAT registered |
 | 14 | QR codes and a check-in screen? (question 9) | Not in the first version |
