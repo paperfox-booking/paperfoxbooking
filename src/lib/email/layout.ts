@@ -160,11 +160,11 @@ export function emailHtml({
 <tr><td align="center" style="padding:16px 8px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;">
 <tr><td style="background:${TEAL};padding:16px 24px;color:${INK};font-size:24px;font-weight:bold;letter-spacing:0.04em;">${logo}<span style="vertical-align:middle;">${escapeHtml(business.businessName.toUpperCase())}</span></td></tr>
-<tr><td style="padding:24px;color:${INK};">
+<tr><td style="padding:24px;color:${INK};overflow-wrap:anywhere;word-break:break-word;">
 ${textToHtml(body)}
 ${textToHtml(signOffText(business))}
 </td></tr>
-<tr><td style="padding:16px 24px;background:${CREAM_LIGHT};color:${STONE};font-size:14px;line-height:1.5;">${escapeHtml(footerText(business))}</td></tr>
+<tr><td style="padding:16px 24px;background:${CREAM_LIGHT};color:${STONE};font-size:14px;line-height:1.5;overflow-wrap:anywhere;word-break:break-word;">${escapeHtml(footerText(business))}</td></tr>
 </table>
 </td></tr>
 </table>

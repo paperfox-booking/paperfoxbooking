@@ -283,6 +283,8 @@ describe("composeEmail", () => {
       "<title>Crop Weekend March 2027: thank you</title>",
     );
     expect(email.html).toContain("Hello Jo");
+    // Long links wrap, so the email fits a phone screen.
+    expect(email.html).toContain("overflow-wrap:anywhere");
     expect(email.warnings).toEqual([
       "{{balnce}} isn't a placeholder this system knows, so it's sent as it is. Check the spelling.",
       "The bank details are empty. An owner can add them in Settings.",
