@@ -65,7 +65,7 @@ export function bookingMoney(
   };
 }
 
-/** Adds up the payments that haven't been removed. */
+/** Adds up the payments (or refunds) that haven't been removed. */
 export function sumPayments(
   payments: readonly { amount_pence: number; deleted_at: string | null }[],
 ): number {
@@ -74,4 +74,12 @@ export function sumPayments(
       payment.deleted_at ? total : total + payment.amount_pence,
     0,
   );
+}
+
+/** What they've paid, less anything refunded to them. */
+export function netPaid(
+  payments: readonly { amount_pence: number; deleted_at: string | null }[],
+  refunds: readonly { amount_pence: number; deleted_at: string | null }[],
+): number {
+  return sumPayments(payments) - sumPayments(refunds);
 }

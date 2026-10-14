@@ -32,7 +32,7 @@ export function PaymentDialog({
   money: BookingMoney;
   today: string;
   onClose: () => void;
-  onRecorded: (row: PersonRow) => void;
+  onRecorded: (row: PersonRow, emailNote?: string) => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [state, formAction, pending] = useActionState(
@@ -42,7 +42,7 @@ export function PaymentDialog({
         previous,
         formData,
       );
-      if (result.done && result.row) onRecorded(result.row);
+      if (result.done && result.row) onRecorded(result.row, result.emailNote);
       return result;
     },
     {},

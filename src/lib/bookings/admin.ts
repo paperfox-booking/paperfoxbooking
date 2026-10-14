@@ -1,7 +1,15 @@
 import "server-only";
+import { allRows } from "@/lib/supabase/all-rows";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getEvent } from "@/lib/events/admin";
 import type { AuditEntry } from "./history";
 import { comparePeople, toPersonRow, type PersonRow } from "./people";
+import {
+  sheetPeople,
+  type SheetOption,
+  type SheetPerson,
+  type SheetRoom,
+} from "./sheets";
 
 export type { PersonRow } from "./people";
 
@@ -21,10 +29,11 @@ export interface RoomRecord {
 
 const BOOKING_COLUMNS = `
   id, reference, ticket_type_id, room_id, price_pence, deposit_pence,
-  price_note, notes, payment_notes, cancelled_at,
+  price_note, notes, payment_notes, cancelled_at, checked_in_at,
   customer:customers(id, full_name, email, phone, emergency_contact, dietary_health, is_team),
   payments(amount_pence, deleted_at),
-  email_log(template, sent_on, created_at)
+  refunds(amount_pence, deleted_at),
+  email_log(template, sent_on, created_at, status, customer_id)
 `;
 
 export async function listEventPeople(eventId: string): Promise<PersonRow[]> {
@@ -78,13 +87,15 @@ export interface KnownPerson {
 /** Everyone on file, for "someone who's been before" suggestions. */
 export async function listKnownPeople(): Promise<KnownPerson[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("customers")
-    .select("id, full_name, email")
-    .is("deleted_at", null)
-    .order("full_name")
-    .limit(5000);
-  if (error) throw new Error(`Couldn't load people: ${error.message}`);
+  const data = await allRows((from, to) =>
+    supabase
+      .from("customers")
+      .select("id, full_name, email")
+      .is("deleted_at", null)
+      .order("full_name")
+      .order("id")
+      .range(from, to),
+  );
   return data.map((person) => ({
     id: person.id,
     fullName: person.full_name,
@@ -124,10 +135,26 @@ export interface BookingDetail {
     deletedAt: string | null;
     deleteReason: string;
   }[];
+  refunds: {
+    id: string;
+    amountPence: number;
+    method: string;
+    refundedOn: string;
+    reason: string;
+    recordedBy: string | null;
+    deletedAt: string | null;
+    deleteReason: string;
+  }[];
   emails: {
     id: string;
     template: string;
+    subject: string;
+    toEmail: string;
+    attachments: string[];
+    status: string;
+    error: string;
     sentOn: string | null;
+    sentAt: string | null;
     note: string;
     outsideSystem: boolean;
     createdBy: string | null;
@@ -135,6 +162,8 @@ export interface BookingDetail {
   history: (AuditEntry & { changedBy: string | null })[];
   /** Team members' names, for "recorded by" and the history. */
   people: Map<string, string>;
+  /** Names of everyone who's had this place, for the history. */
+  customerNames: Map<string, string>;
 }
 
 export async function getBookingDetail(
@@ -149,7 +178,8 @@ export async function getBookingDetail(
        event:events(id, title, starts_at, ends_at, balance_due_on),
        customer:customers(id, full_name, email, phone),
        payments(id, amount_pence, method, received_on, note, recorded_by, deleted_at, delete_reason, created_at),
-       email_log(id, template, sent_on, note, outside_system, created_by, created_at)`,
+       refunds(id, amount_pence, method, refunded_on, reason, recorded_by, deleted_at, delete_reason, created_at),
+       email_log(id, template, subject, to_email, attachments, status, error, sent_on, sent_at, note, outside_system, created_by, created_at)`,
     )
     .eq("id", bookingId)
     .maybeSingle();
@@ -157,23 +187,31 @@ export async function getBookingDetail(
   if (!booking || !booking.event || !booking.customer) return null;
 
   const paymentIds = booking.payments.map((payment) => payment.id);
+  const refundIds = booking.refunds.map((refund) => refund.id);
   const { data: audit } = await supabase
     .from("audit_log")
     .select(
       "table_name, action, old_values, new_values, changed_at, changed_by",
     )
     .or(
-      `and(table_name.eq.bookings,record_id.eq.${booking.id})${
-        paymentIds.length
-          ? `,and(table_name.eq.payments,record_id.in.(${paymentIds.join(",")}))`
-          : ""
-      }`,
+      [
+        `and(table_name.eq.bookings,record_id.eq.${booking.id})`,
+        ...(paymentIds.length
+          ? [
+              `and(table_name.eq.payments,record_id.in.(${paymentIds.join(",")}))`,
+            ]
+          : []),
+        ...(refundIds.length
+          ? [`and(table_name.eq.refunds,record_id.in.(${refundIds.join(",")}))`]
+          : []),
+      ].join(","),
     )
     .order("changed_at", { ascending: false })
     .limit(200);
 
   const staffIds = [
     ...booking.payments.map((payment) => payment.recorded_by),
+    ...booking.refunds.map((refund) => refund.recorded_by),
     ...booking.email_log.map((email) => email.created_by),
     ...(audit ?? []).map((entry) => entry.changed_by),
   ].filter((id): id is string => Boolean(id));
@@ -183,6 +221,26 @@ export async function getBookingDetail(
         .select("id, full_name, email")
         .in("id", [...new Set(staffIds)])
     : { data: [] };
+  // Everyone who's had this place, if it's been passed on.
+  const customerIds = new Set(
+    (audit ?? [])
+      .filter((entry) => entry.table_name === "bookings")
+      .flatMap((entry) =>
+        [entry.old_values, entry.new_values].map((values) =>
+          values && typeof values === "object" && !Array.isArray(values)
+            ? values.customer_id
+            : null,
+        ),
+      )
+      .filter((id): id is string => typeof id === "string"),
+  );
+  const { data: customers } =
+    customerIds.size > 1
+      ? await supabase
+          .from("customers")
+          .select("id, full_name")
+          .in("id", [...customerIds])
+      : { data: [] };
 
   return {
     id: booking.id,
@@ -227,6 +285,22 @@ export async function getBookingDetail(
         deletedAt: payment.deleted_at,
         deleteReason: payment.delete_reason,
       })),
+    refunds: [...booking.refunds]
+      .sort((a, b) =>
+        `${a.refunded_on}${a.created_at}`.localeCompare(
+          `${b.refunded_on}${b.created_at}`,
+        ),
+      )
+      .map((refund) => ({
+        id: refund.id,
+        amountPence: refund.amount_pence,
+        method: refund.method,
+        refundedOn: refund.refunded_on,
+        reason: refund.reason,
+        recordedBy: refund.recorded_by,
+        deletedAt: refund.deleted_at,
+        deleteReason: refund.delete_reason,
+      })),
     emails: [...booking.email_log]
       .sort((a, b) =>
         `${b.sent_on ?? ""}${b.created_at}`.localeCompare(
@@ -236,7 +310,13 @@ export async function getBookingDetail(
       .map((email) => ({
         id: email.id,
         template: email.template,
+        subject: email.subject,
+        toEmail: email.to_email,
+        attachments: email.attachments,
+        status: email.status,
+        error: email.error,
         sentOn: email.sent_on,
+        sentAt: email.sent_at,
         note: email.note,
         outsideSystem: email.outside_system,
         createdBy: email.created_by,
@@ -254,6 +334,9 @@ export async function getBookingDetail(
         profile.id,
         profile.full_name || profile.email,
       ]),
+    ),
+    customerNames: new Map(
+      (customers ?? []).map((customer) => [customer.id, customer.full_name]),
     ),
   };
 }
@@ -313,12 +396,14 @@ const DIRECTORY_COLUMNS = `
 /** Everyone on file, the team first and then by name. */
 export async function listDirectory(): Promise<DirectoryPerson[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("customers")
-    .select(DIRECTORY_COLUMNS)
-    .is("deleted_at", null)
-    .limit(5000);
-  if (error) throw new Error(`Couldn't load people: ${error.message}`);
+  const data = await allRows((from, to) =>
+    supabase
+      .from("customers")
+      .select(DIRECTORY_COLUMNS)
+      .is("deleted_at", null)
+      .order("id")
+      .range(from, to),
+  );
   return data.map(toDirectoryPerson).sort(comparePeople);
 }
 
@@ -363,4 +448,30 @@ export async function listPersonBookings(customerId: string): Promise<
       balanceDueOn: booking.event!.balance_due_on,
     }))
     .sort((a, b) => b.eventStartsAt.localeCompare(a.eventStartsAt));
+}
+
+export interface EventSheet {
+  event: NonNullable<Awaited<ReturnType<typeof getEvent>>>;
+  options: SheetOption[];
+  rooms: SheetRoom[];
+  people: SheetPerson[];
+}
+
+/** Everything the printable sheets need for one event. */
+export async function getEventSheet(
+  eventId: string,
+): Promise<EventSheet | null> {
+  const [event, rows, rooms] = await Promise.all([
+    getEvent(eventId),
+    listEventPeople(eventId),
+    listRooms(eventId),
+  ]);
+  if (!event) return null;
+  const options = event.options.map((option) => ({
+    id: option.id,
+    name: option.name,
+    description: option.description,
+    startsAt: option.starts_at,
+  }));
+  return { event, options, rooms, people: sheetPeople(rows, options, rooms) };
 }

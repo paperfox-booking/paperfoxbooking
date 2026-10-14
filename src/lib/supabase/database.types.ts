@@ -47,6 +47,8 @@ export type Database = {
         Row: {
           cancel_reason: string;
           cancelled_at: string | null;
+          checked_in_at: string | null;
+          checked_in_by: string | null;
           created_at: string;
           created_by: string | null;
           currency: string;
@@ -68,6 +70,8 @@ export type Database = {
         Insert: {
           cancel_reason?: string;
           cancelled_at?: string | null;
+          checked_in_at?: string | null;
+          checked_in_by?: string | null;
           created_at?: string;
           created_by?: string | null;
           currency?: string;
@@ -88,6 +92,8 @@ export type Database = {
         Update: {
           cancel_reason?: string;
           cancelled_at?: string | null;
+          checked_in_at?: string | null;
+          checked_in_by?: string | null;
           created_at?: string;
           created_by?: string | null;
           currency?: string;
@@ -187,47 +193,62 @@ export type Database = {
       };
       email_log: {
         Row: {
+          attachments: string[];
+          body: string;
           booking_id: string | null;
           created_at: string;
           created_by: string | null;
           customer_id: string | null;
+          error: string;
           id: string;
           note: string;
           outside_system: boolean;
+          provider_message_id: string | null;
           sent_at: string | null;
           sent_on: string | null;
           status: string;
           subject: string;
           template: string;
+          to_email: string;
         };
         ComputedFields: never;
         Insert: {
+          attachments?: string[];
+          body?: string;
           booking_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           customer_id?: string | null;
+          error?: string;
           id?: string;
           note?: string;
           outside_system?: boolean;
+          provider_message_id?: string | null;
           sent_at?: string | null;
           sent_on?: string | null;
           status?: string;
           subject?: string;
           template: string;
+          to_email?: string;
         };
         Update: {
+          attachments?: string[];
+          body?: string;
           booking_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           customer_id?: string | null;
+          error?: string;
           id?: string;
           note?: string;
           outside_system?: boolean;
+          provider_message_id?: string | null;
           sent_at?: string | null;
           sent_on?: string | null;
           status?: string;
           subject?: string;
           template?: string;
+          to_email?: string;
         };
         Relationships: [
           {
@@ -245,6 +266,55 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      email_templates: {
+        Row: {
+          attach_booking_details: boolean;
+          attach_confirmation: boolean;
+          attach_terms: boolean;
+          body: string;
+          created_at: string;
+          description: string;
+          id: string;
+          key: string;
+          name: string;
+          sort_order: number;
+          subject: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          attach_booking_details?: boolean;
+          attach_confirmation?: boolean;
+          attach_terms?: boolean;
+          body: string;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          key: string;
+          name: string;
+          sort_order?: number;
+          subject: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          attach_booking_details?: boolean;
+          attach_confirmation?: boolean;
+          attach_terms?: boolean;
+          body?: string;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          key?: string;
+          name?: string;
+          sort_order?: number;
+          subject?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
       };
       event_costs: {
         Row: {
@@ -360,6 +430,7 @@ export type Database = {
           booking_closes_at: string | null;
           booking_opens_at: string | null;
           capacity: number;
+          class_kits_info: string;
           copied_from_event_id: string | null;
           created_at: string;
           created_by: string | null;
@@ -371,6 +442,7 @@ export type Database = {
           hotel_info: string;
           id: string;
           included: string;
+          joining_info: string;
           slug: string;
           starts_at: string;
           status: Database["public"]["Enums"]["event_status"];
@@ -385,6 +457,7 @@ export type Database = {
           booking_closes_at?: string | null;
           booking_opens_at?: string | null;
           capacity: number;
+          class_kits_info?: string;
           copied_from_event_id?: string | null;
           created_at?: string;
           created_by?: string | null;
@@ -396,6 +469,7 @@ export type Database = {
           hotel_info?: string;
           id?: string;
           included?: string;
+          joining_info?: string;
           slug?: string;
           starts_at: string;
           status?: Database["public"]["Enums"]["event_status"];
@@ -409,6 +483,7 @@ export type Database = {
           booking_closes_at?: string | null;
           booking_opens_at?: string | null;
           capacity?: number;
+          class_kits_info?: string;
           copied_from_event_id?: string | null;
           created_at?: string;
           created_by?: string | null;
@@ -420,6 +495,7 @@ export type Database = {
           hotel_info?: string;
           id?: string;
           included?: string;
+          joining_info?: string;
           slug?: string;
           starts_at?: string;
           status?: Database["public"]["Enums"]["event_status"];
@@ -536,6 +612,148 @@ export type Database = {
         };
         Relationships: [];
       };
+      refunds: {
+        Row: {
+          amount_pence: number;
+          booking_id: string;
+          created_at: string;
+          currency: string;
+          delete_reason: string;
+          deleted_at: string | null;
+          id: string;
+          method: Database["public"]["Enums"]["payment_method"];
+          reason: string;
+          recorded_by: string | null;
+          refunded_on: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          amount_pence: number;
+          booking_id: string;
+          created_at?: string;
+          currency?: string;
+          delete_reason?: string;
+          deleted_at?: string | null;
+          id?: string;
+          method?: Database["public"]["Enums"]["payment_method"];
+          reason: string;
+          recorded_by?: string | null;
+          refunded_on: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount_pence?: number;
+          booking_id?: string;
+          created_at?: string;
+          currency?: string;
+          delete_reason?: string;
+          deleted_at?: string | null;
+          id?: string;
+          method?: Database["public"]["Enums"]["payment_method"];
+          reason?: string;
+          recorded_by?: string | null;
+          refunded_on?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "refunds_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      settings: {
+        Row: {
+          address: string;
+          bank_account_name: string;
+          bank_account_number: string;
+          bank_name: string;
+          bank_sort_code: string;
+          business_name: string;
+          company_number: string;
+          contact_email: string;
+          created_at: string;
+          email_reply_to: string;
+          email_test_address: string;
+          facebook_group_url: string;
+          facebook_url: string;
+          id: string;
+          instagram_url: string;
+          legal_name: string;
+          phone: string;
+          send_payment_emails: boolean;
+          sign_off: string;
+          singleton: boolean;
+          terms_text: string;
+          terms_updated_at: string;
+          terms_version: number;
+          updated_at: string;
+          updated_by: string | null;
+          website: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          address?: string;
+          bank_account_name?: string;
+          bank_account_number?: string;
+          bank_name?: string;
+          bank_sort_code?: string;
+          business_name?: string;
+          company_number?: string;
+          contact_email?: string;
+          created_at?: string;
+          email_reply_to?: string;
+          email_test_address?: string;
+          facebook_group_url?: string;
+          facebook_url?: string;
+          id?: string;
+          instagram_url?: string;
+          legal_name?: string;
+          phone?: string;
+          send_payment_emails?: boolean;
+          sign_off?: string;
+          singleton?: boolean;
+          terms_text?: string;
+          terms_updated_at?: string;
+          terms_version?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          website?: string;
+        };
+        Update: {
+          address?: string;
+          bank_account_name?: string;
+          bank_account_number?: string;
+          bank_name?: string;
+          bank_sort_code?: string;
+          business_name?: string;
+          company_number?: string;
+          contact_email?: string;
+          created_at?: string;
+          email_reply_to?: string;
+          email_test_address?: string;
+          facebook_group_url?: string;
+          facebook_url?: string;
+          id?: string;
+          instagram_url?: string;
+          legal_name?: string;
+          phone?: string;
+          send_payment_emails?: boolean;
+          sign_off?: string;
+          singleton?: boolean;
+          terms_text?: string;
+          terms_updated_at?: string;
+          terms_version?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          website?: string;
+        };
+        Relationships: [];
+      };
       staff: {
         Row: {
           created_at: string;
@@ -558,6 +776,28 @@ export type Database = {
           role?: Database["public"]["Enums"]["staff_role"];
           updated_at?: string;
           user_id?: string;
+        };
+        Relationships: [];
+      };
+      terms_versions: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          terms_text: string;
+          version: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          terms_text: string;
+          version: number;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          terms_text?: string;
+          version?: number;
         };
         Relationships: [];
       };
@@ -670,11 +910,90 @@ export type Database = {
         };
         Relationships: [];
       };
+      waitlist: {
+        Row: {
+          booking_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          customer_id: string;
+          event_id: string;
+          id: string;
+          notes: string;
+          offer_expires_on: string | null;
+          offered_at: string | null;
+          status: Database["public"]["Enums"]["waitlist_status"];
+          ticket_type_id: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          booking_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id: string;
+          event_id: string;
+          id?: string;
+          notes?: string;
+          offer_expires_on?: string | null;
+          offered_at?: string | null;
+          status?: Database["public"]["Enums"]["waitlist_status"];
+          ticket_type_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          booking_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id?: string;
+          event_id?: string;
+          id?: string;
+          notes?: string;
+          offer_expires_on?: string | null;
+          offered_at?: string | null;
+          status?: Database["public"]["Enums"]["waitlist_status"];
+          ticket_type_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "waitlist_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "waitlist_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "waitlist_option_same_event";
+            columns: ["ticket_type_id", "event_id"];
+            isOneToOne: false;
+            referencedRelation: "ticket_types";
+            referencedColumns: ["id", "event_id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      book_from_waitlist: {
+        Args: { option_id: string; room_id?: string; waitlist_id: string };
+        Returns: string;
+      };
       copy_event: {
         Args: {
           new_starts_on: string;
@@ -683,9 +1002,74 @@ export type Database = {
         };
         Returns: string;
       };
+      customer_settings: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          address: string;
+          bank_account_name: string;
+          bank_account_number: string;
+          bank_name: string;
+          bank_sort_code: string;
+          business_name: string;
+          company_number: string;
+          contact_email: string;
+          facebook_group_url: string;
+          facebook_url: string;
+          instagram_url: string;
+          legal_name: string;
+          phone: string;
+          sign_off: string;
+          terms_text: string;
+          terms_version: number;
+          website: string;
+        }[];
+      };
+      event_private_details: {
+        Args: { event_ids: string[] };
+        Returns: {
+          class_kits_info: string;
+          event_id: string;
+          facebook_group_url: string;
+          joining_info: string;
+        }[];
+      };
       import_bookings: {
         Args: { people: Json; rooms: Json; target_event_id: string };
         Returns: number;
+      };
+      log_email: {
+        Args: {
+          attachments: string[];
+          body: string;
+          booking_id: string;
+          error?: string;
+          provider_message_id?: string;
+          sent: boolean;
+          subject: string;
+          template: string;
+          test?: boolean;
+          to_email: string;
+        };
+        Returns: string;
+      };
+      my_booking_money: {
+        Args: { booking_ids: string[] };
+        Returns: {
+          amount_pence: number;
+          booking_id: string;
+          created_at: string;
+          kind: string;
+          method: Database["public"]["Enums"]["payment_method"];
+          on_date: string;
+        }[];
+      };
+      pass_place: {
+        Args: { booking_id: string; new_customer_id: string; reason: string };
+        Returns: undefined;
+      };
+      set_checked_in: {
+        Args: { arrived: boolean; booking_id: string };
+        Returns: string;
       };
     };
     Enums: {
@@ -693,6 +1077,8 @@ export type Database = {
         "draft" | "published" | "sold_out" | "cancelled" | "finished";
       payment_method: "bank_transfer" | "cash" | "card" | "other";
       staff_role: "owner" | "admin" | "door";
+      waitlist_status:
+        "waiting" | "offered" | "booked" | "declined" | "removed";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -823,6 +1209,7 @@ export const Constants = {
       event_status: ["draft", "published", "sold_out", "cancelled", "finished"],
       payment_method: ["bank_transfer", "cash", "card", "other"],
       staff_role: ["owner", "admin", "door"],
+      waitlist_status: ["waiting", "offered", "booked", "declined", "removed"],
     },
   },
 } as const;

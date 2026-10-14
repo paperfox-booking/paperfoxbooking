@@ -90,6 +90,11 @@ async function People({
             <Link href={`/admin/events/${event.id}/rooms`}>Rooms</Link>
           </Button>
         ) : null}
+        <Button asChild variant="secondary">
+          <Link href={`/admin/events/${event.id}/print`}>
+            Printing and catering
+          </Link>
+        </Button>
         {canEdit && rows.every((row) => row.cancelled) ? (
           <Button asChild variant="secondary">
             <Link href={`/admin/events/${event.id}/import`}>

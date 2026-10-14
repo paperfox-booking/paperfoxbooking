@@ -24,6 +24,20 @@ export function safeNextPath(
   }
 }
 
+/**
+ * The `next` path from the address of the page a form was sent from. A
+ * sign-in form only adds its own `next` field once the page has finished
+ * loading, so someone quick (or on a slow phone) can send it without one.
+ */
+export function nextFromAddress(address: string | null | undefined): string {
+  if (!address) return "";
+  try {
+    return safeNextPath(new URL(address).searchParams.get("next"), "");
+  } catch {
+    return "";
+  }
+}
+
 export const CUSTOMER_SIGN_IN = "/sign-in";
 export const TEAM_SIGN_IN = "/sign-in/team";
 

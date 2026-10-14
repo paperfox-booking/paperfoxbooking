@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeNextPath, signInPath } from "./redirects";
+import { nextFromAddress, safeNextPath, signInPath } from "./redirects";
 
 describe("safeNextPath", () => {
   it("allows paths on this site", () => {
@@ -44,5 +44,26 @@ describe("signInPath", () => {
 
   it("drops unsafe return paths", () => {
     expect(signInPath("https://evil.example")).toBe("/sign-in");
+  });
+});
+
+describe("nextFromAddress", () => {
+  it("reads next from the sign-in page's address", () => {
+    expect(
+      nextFromAddress(
+        "https://book.paper-fox.co.uk/sign-in/team?next=%2Fadmin%2Fevents%2Fabc%2Fcheck-in",
+      ),
+    ).toBe("/admin/events/abc/check-in");
+  });
+
+  it("ignores other sites and addresses without next", () => {
+    expect(
+      nextFromAddress(
+        "https://book.paper-fox.co.uk/sign-in?next=https://evil.example",
+      ),
+    ).toBe("");
+    expect(nextFromAddress("https://book.paper-fox.co.uk/sign-in")).toBe("");
+    expect(nextFromAddress("not an address")).toBe("");
+    expect(nextFromAddress(null)).toBe("");
   });
 });

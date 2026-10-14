@@ -2,8 +2,8 @@ import { formatUkDate } from "@/lib/dates";
 import { formatPrice } from "@/lib/money";
 
 /**
- * Turns audit log entries for a booking and its payments into plain English
- * lines for the booking's History section.
+ * Turns audit log entries for a booking, its payments and its refunds into
+ * plain English lines for the booking's History section.
  */
 
 export interface AuditEntry {
@@ -17,6 +17,8 @@ export interface AuditEntry {
 export interface HistoryNames {
   options: Map<string, string>;
   rooms: Map<string, string>;
+  /** People's names, for a place passed on to someone else. */
+  people?: Map<string, string>;
 }
 
 const METHODS: Record<string, string> = {
@@ -92,6 +94,24 @@ export function describeChange(
     return [];
   }
 
+  if (entry.table_name === "refunds") {
+    const amount = money(after.amount_pence ?? before.amount_pence);
+    if (entry.action === "insert") {
+      const method = METHODS[String(after.method)] ?? "refund";
+      const date =
+        typeof after.refunded_on === "string"
+          ? `, paid back ${formatUkDate(after.refunded_on)}`
+          : "";
+      return [
+        `Refund of ${amount} recorded (${method}${date}): ${String(after.reason)}.`,
+      ];
+    }
+    if (!before.deleted_at && after.deleted_at) {
+      return [`Refund of ${amount} removed: ${String(after.delete_reason)}.`];
+    }
+    return [];
+  }
+
   if (entry.table_name === "bookings") {
     if (entry.action === "insert") {
       return [
@@ -99,6 +119,16 @@ export function describeChange(
       ];
     }
     const lines: string[] = [];
+    if (
+      typeof before.customer_id === "string" &&
+      typeof after.customer_id === "string" &&
+      before.customer_id !== after.customer_id
+    ) {
+      const name = (id: string) => names.people?.get(id) ?? "someone else";
+      lines.push(
+        `Place passed on from ${name(before.customer_id)} to ${name(after.customer_id)}.`,
+      );
+    }
     if (!before.cancelled_at && after.cancelled_at) {
       lines.push(`Cancelled: ${String(after.cancel_reason)}.`);
     } else if (before.cancelled_at && !after.cancelled_at) {

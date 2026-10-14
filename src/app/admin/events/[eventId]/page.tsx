@@ -17,6 +17,7 @@ import {
   formatUkLongDate,
   toUkDateInput,
 } from "@/lib/dates";
+import { countWaiting } from "@/lib/bookings/waitlist";
 import { countBooked, getEvent, type AdminEvent } from "@/lib/events/admin";
 import { balanceAfterDeposit, describeTimeBefore } from "@/lib/events/rules";
 import { formatPrice } from "@/lib/money";
@@ -64,9 +65,11 @@ async function EventDetails({
   if (!access.allowed) return <NotAllowed access={access} />;
   if (!isUuid(eventId)) notFound();
 
-  const [event, booked, { notice }] = await Promise.all([
+  const canSeeWaiting = can(access.user.staffRole, "bookings.manage");
+  const [event, booked, waiting, { notice }] = await Promise.all([
     getEvent(eventId),
     countBooked(eventId),
+    canSeeWaiting ? countWaiting(eventId) : Promise.resolve(0),
     searchParams,
   ]);
   if (!event) notFound();
@@ -91,6 +94,22 @@ async function EventDetails({
         <Button asChild>
           <Link href={`/admin/events/${event.id}/people`}>
             People booked ({booked} of {event.capacity})
+          </Link>
+        </Button>
+        <Button asChild variant="secondary">
+          <Link href={`/admin/events/${event.id}/email`}>Email people</Link>
+        </Button>
+        <Button asChild variant="secondary">
+          <Link href={`/admin/events/${event.id}/waiting-list`}>
+            Waiting list{waiting ? ` (${waiting})` : ""}
+          </Link>
+        </Button>
+        <Button asChild variant="secondary">
+          <Link href={`/admin/events/${event.id}/check-in`}>Check in</Link>
+        </Button>
+        <Button asChild variant="secondary">
+          <Link href={`/admin/events/${event.id}/print`}>
+            Printing and catering
           </Link>
         </Button>
         {canManage ? (
@@ -121,6 +140,39 @@ async function EventDetails({
 
       <Options event={event} canManage={canManage} />
       <Details event={event} />
+
+      {can(access.user.staffRole, "payments.view") ? (
+        <section aria-labelledby="documents-heading" className="space-y-2">
+          <h2 id="documents-heading" className="text-3xl">
+            Documents for emails
+          </h2>
+          <p>
+            Made from this event&apos;s details, and attached to emails. Check
+            them after changing the details above. Each person&apos;s copy has
+            their own name, reference and dates.
+          </p>
+          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+            {(
+              [
+                ["booking-details", "Booking details (PDF)"],
+                ["confirmation", "Confirmation (PDF)"],
+                ["terms", "Terms and conditions (PDF)"],
+              ] as const
+            ).map(([kind, label]) => (
+              <li key={kind}>
+                <a
+                  href={`/admin/events/${event.id}/documents/${kind}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {label}
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {canManage ? (
         <EventStatusActions
@@ -270,6 +322,16 @@ function Details({ event }: { event: AdminEvent }) {
           <Row label="Description">
             <span className="whitespace-pre-line">
               {event.description || "None"}
+            </span>
+          </Row>
+          <Row label="Class kits (for the email)">
+            <span className="whitespace-pre-line">
+              {event.class_kits_info || "None yet"}
+            </span>
+          </Row>
+          <Row label="Joining details (for the email)">
+            <span className="whitespace-pre-line">
+              {event.joining_info || "None yet"}
             </span>
           </Row>
         </dl>

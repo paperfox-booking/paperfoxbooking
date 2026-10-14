@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { daysBetween } from "@/lib/dates";
+import { formatPrice } from "@/lib/money";
 import {
   checkbox,
   optionalPounds,
@@ -107,6 +108,26 @@ export const addPersonSchema = z.object({
   roomId: optionalId,
 });
 
+export const PASS_PLACE_FIELDS = [
+  "customerId",
+  "fullName",
+  "email",
+  "reason",
+] as const;
+export type PassPlaceField = (typeof PASS_PLACE_FIELDS)[number];
+
+/** Passing a place to someone else, with Paper Fox's approval. */
+export const passPlaceSchema = z.object({
+  /** Set when someone who's been before was chosen from the list. */
+  customerId: optionalId,
+  fullName: requiredText(200, "Enter the name of the person taking the place"),
+  email: optionalEmail,
+  reason: requiredText(
+    300,
+    "Say why, for example Approved by Nichola by email on 12 October",
+  ),
+});
+
 // ---------------------------------------------------------------------------
 // Payments
 // ---------------------------------------------------------------------------
@@ -150,6 +171,48 @@ export const removePaymentSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Refunds, made outside the system and recorded here
+// ---------------------------------------------------------------------------
+
+export const REFUND_FIELDS = [
+  "amount",
+  "refundedOn",
+  "method",
+  "reason",
+] as const;
+export type RefundField = (typeof REFUND_FIELDS)[number];
+
+/** `mostPence` is what they've paid, less earlier refunds. */
+export function refundSchema(today: string, mostPence: number) {
+  return z.object({
+    amount: requiredPounds("Enter the amount refunded, like 135")
+      .refine((pence) => pence > 0, { error: "Enter an amount more than £0" })
+      .refine((pence) => pence <= mostPence, {
+        error:
+          mostPence > 0
+            ? `That's more than they've paid. The most you can refund is ${formatPrice(mostPence)}`
+            : "They haven't paid anything that could be refunded",
+      }),
+    refundedOn: requiredDate("Enter the date the money was paid back").refine(
+      (date) => daysBetween(today, date) <= 0,
+      { error: "The date can't be in the future" },
+    ),
+    method: z.enum(PAYMENT_METHODS, { error: "Choose how it was paid back" }),
+    reason: requiredText(
+      500,
+      "Say why, for example Cancelled more than 6 weeks before",
+    ),
+  });
+}
+
+export const removeRefundSchema = z.object({
+  reason: requiredText(
+    500,
+    "Say why it's being removed, for example Recorded on the wrong booking",
+  ),
+});
+
+// ---------------------------------------------------------------------------
 // Emails sent outside the system
 // ---------------------------------------------------------------------------
 
@@ -159,6 +222,10 @@ export const EMAIL_TEMPLATES = [
   "B3",
   "thanks",
   "balance_reminder",
+  "class_kits",
+  "joining",
+  "cancelled",
+  "refund",
   "other",
 ] as const;
 export const EMAIL_TEMPLATE_LABELS: Record<
@@ -170,6 +237,10 @@ export const EMAIL_TEMPLATE_LABELS: Record<
   B3: "B3: paid in full",
   thanks: "Thanks for your payment",
   balance_reminder: "Balance reminder",
+  class_kits: "Class kits",
+  joining: "Joining details",
+  cancelled: "Cancellation confirmation",
+  refund: "Refund confirmation",
   other: "Other",
 };
 

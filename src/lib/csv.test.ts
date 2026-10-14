@@ -14,9 +14,9 @@ describe("toCsv", () => {
   });
 
   it("stops text being treated as a formula, but leaves numbers alone", () => {
-    expect(toCsv([["=SUM(A1:A9)", "+44 7700", "-5", -5, "@me"]])).toBe(
-      "﻿'=SUM(A1:A9),'+44 7700,'-5,-5,'@me\r\n",
-    );
+    expect(
+      toCsv([["=SUM(A1:A9)", "+44 7700", "-5+1", "-5", "-12.50", -5, "@me"]]),
+    ).toBe("﻿'=SUM(A1:A9),'+44 7700,'-5+1,-5,-12.50,-5,'@me\r\n");
   });
 
   it("writes yes and no, and leaves empty values empty", () => {

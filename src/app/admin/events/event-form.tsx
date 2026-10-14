@@ -258,6 +258,28 @@ export function EventForm({
         />
       </FormSection>
 
+      <FormSection
+        title="Emails before the event"
+        description="Filled into the class kits and joining details emails, so they're right for this event. Only people who've booked see them. Leave a blank line between paragraphs, and start lines with “- ” for bullet points."
+      >
+        <TextareaField
+          name="classKitsInfo"
+          label="Class kits (optional)"
+          hint="The kits on offer, what's in each one, the prices and how to order."
+          error={errors.classKitsInfo}
+          defaultValue={value("classKitsInfo")}
+          rows={6}
+        />
+        <TextareaField
+          name="joiningInfo"
+          label="Joining details (optional)"
+          hint="Arrival times and where to go, the timetable for the weekend, what's nearby, and the usual questions and answers."
+          error={errors.joiningInfo}
+          defaultValue={value("joiningInfo")}
+          rows={10}
+        />
+      </FormSection>
+
       {isNew ? (
         <Checkbox
           id="addStandardOptions"

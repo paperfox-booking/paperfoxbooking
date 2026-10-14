@@ -13,6 +13,9 @@ interface MailpitSearch {
 interface MailpitMessage {
   Subject: string;
   Text: string;
+  HTML: string;
+  To: { Address?: string; Email?: string }[];
+  Attachments: { FileName: string; ContentType: string }[];
 }
 
 /** Waits for the newest sign-in email to this address and returns its code. */
@@ -44,4 +47,41 @@ export async function latestSignInCode(
     )
     .not.toBe("");
   return code;
+}
+
+/**
+ * Waits for an email to this address whose subject matches, sent after the
+ * given time, and returns it.
+ */
+export async function waitForEmail(
+  email: string,
+  subject: RegExp,
+  sentAfter: Date,
+): Promise<MailpitMessage> {
+  let found: MailpitMessage | null = null;
+  await expect
+    .poll(
+      async () => {
+        const search = await fetch(
+          `${mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`,
+        );
+        if (!search.ok) return false;
+        const { messages } = (await search.json()) as MailpitSearch;
+        for (const summary of messages) {
+          if (new Date(summary.Created) < sentAfter) continue;
+          const response = await fetch(
+            `${mailpitUrl}/api/v1/message/${summary.ID}`,
+          );
+          const message = (await response.json()) as MailpitMessage;
+          if (subject.test(message.Subject)) {
+            found = message;
+            return true;
+          }
+        }
+        return false;
+      },
+      { message: `waiting for an email to ${email}`, timeout: 20_000 },
+    )
+    .toBe(true);
+  return found!;
 }

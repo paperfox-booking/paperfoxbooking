@@ -62,6 +62,16 @@ async function Person({
           <p className="font-bold">On the Paper Fox team</p>
         ) : null}
         <PageNotice notice={notice} messages={{ saved: { text: "Saved." } }} />
+        {canSeeMoney ? (
+          <p className="mt-2">
+            <a href={`/admin/people/${customerId}/export`} download>
+              Download everything we hold about {person.fullName}
+            </a>{" "}
+            <span className="text-stone">
+              (for a request to see their data)
+            </span>
+          </p>
+        ) : null}
       </div>
 
       <section aria-labelledby="bookings-heading" className="space-y-3">

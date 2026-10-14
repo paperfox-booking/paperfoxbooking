@@ -129,20 +129,22 @@ erDiagram
 
 ### Who can do what with events
 
-|                                                        | Visitor | Customer | Door staff | Admin | Owner |
-| ------------------------------------------------------ | ------- | -------- | ---------- | ----- | ----- |
-| Read published events, their options and venues        | ✓       | ✓        | ✓          | ✓     | ✓     |
-| Read an event's Facebook group                         |         | ✓\*      | ✓          | ✓     | ✓     |
-| Read drafts                                            |         |          | ✓          | ✓     | ✓     |
-| Add and change venues, events and options; copy events |         |          |            | ✓     | ✓     |
-| Change an event's web address, or who created a record |         |          |            |       |       |
-| Delete rows outright (records are marked deleted)      |         |          |            |       |       |
+|                                                                     | Visitor | Customer | Door staff | Admin | Owner |
+| ------------------------------------------------------------------- | ------- | -------- | ---------- | ----- | ----- |
+| Read published events, their options and venues                     | ✓       | ✓        | ✓          | ✓     | ✓     |
+| Read an event's Facebook group, joining details and class kits text |         | ✓\*      | ✓          | ✓     | ✓     |
+| Read drafts                                                         |         |          | ✓          | ✓     | ✓     |
+| Add and change venues, events and options; copy events              |         |          |            | ✓     | ✓     |
+| Change an event's web address, or who created a record              |         |          |            |       |       |
+| Delete rows outright (records are marked deleted)                   |         |          |            |       |       |
 
-\* Signed-in customers can currently read it for published events. Once
-bookings exist (Phase 2), this will be limited to people booked on the
-event.
+\* Only for an event they have a booking on (not cancelled). Nobody signed
+in can select these three columns directly: they come from
+`public.event_private_details(event_ids)`, which gives them to the team and
+to people booked on the event.
 
-`tests/db/events.test.ts` proves these rules.
+`tests/db/events.test.ts` and `tests/db/customer-settings.test.ts` prove
+these rules.
 
 ## People, bookings and money (Phase 2)
 
@@ -155,6 +157,7 @@ erDiagram
   EVENTS ||--o{ EVENT_ROOMS : "has"
   EVENTS ||--o{ EVENT_COSTS : "costs"
   BOOKINGS ||--o{ PAYMENTS : "paid by"
+  BOOKINGS ||--o{ REFUNDS : "paid back by"
   BOOKINGS ||--o{ EMAIL_LOG : "emails"
   AUTH_USERS |o--o| CUSTOMERS : "signs in as"
 
@@ -184,6 +187,8 @@ erDiagram
     text source "staff, import or online"
     timestamptz cancelled_at
     text cancel_reason
+    timestamptz checked_in_at "when they arrived"
+    uuid checked_in_by FK
   }
   EVENT_ROOMS {
     uuid id PK
@@ -199,6 +204,17 @@ erDiagram
     payment_method method "bank_transfer, cash, card, other"
     date received_on "empty only for imported totals"
     text note
+    uuid recorded_by FK
+    timestamptz deleted_at "removed, with a reason"
+    text delete_reason
+  }
+  REFUNDS {
+    uuid id PK
+    uuid booking_id FK
+    integer amount_pence
+    payment_method method "how it was paid back"
+    date refunded_on
+    text reason
     uuid recorded_by FK
     timestamptz deleted_at "removed, with a reason"
     text delete_reason
@@ -232,24 +248,114 @@ erDiagram
   people taking the last place at the same moment can't both succeed.
 - **Payments are never edited or deleted.** A mistake is removed with a
   reason, and stays in the history.
+- **Refunds** work the same way. What someone has paid is always their
+  payments less their refunds, everywhere (the people list, emails, reports
+  and their account). A booking can never be refunded more than it's been
+  paid: the database locks the booking and refuses a refund that would, or
+  removing a payment that would leave it that way.
 - **`public.import_bookings`** brings a checked spreadsheet into an event
   with nobody booked yet, all at once or not at all. It reuses people
   already on file (matched by email).
 - **`audit_log`** records every change to events, options, bookings,
   payments and costs, with who made it. Nobody can change it.
+- **`public.pass_place(booking_id, new_customer_id, reason)`** passes a
+  place to someone else (owners and admins only): the booking, with its
+  reference and payments, moves to them in one step, the reason is added to
+  its notes, someone already booked on the event is refused, and the new
+  person comes off the event's waiting list.
+- **Linking accounts:** a person's record is linked to a sign-in account
+  with the same email address once that address is confirmed, whether the
+  account or the record came first.
+- **`public.set_checked_in(booking_id, arrived)`** marks someone as arrived,
+  or undoes it. Any team member can, door staff included, but only for a
+  booking that isn't cancelled. Pressing Arrived twice keeps the first time.
 
 ### Who can do what with people and money
 
-|                                                   | Customer | Door staff | Admin | Owner |
-| ------------------------------------------------- | -------- | ---------- | ----- | ----- |
-| Read their own record, bookings and payments      | ✓        |            |       |       |
-| Read everyone's records and bookings              |          | ✓          | ✓     | ✓     |
-| Add and change people, bookings and rooms         |          |            | ✓     | ✓     |
-| Read and record payments; read and record emails  |          |            | ✓     | ✓     |
-| Read and change costs; read the audit log         |          |            | ✓     | ✓     |
-| Edit or delete a payment, or change the audit log |          |            |       |       |
+|                                                      | Customer | Door staff | Admin | Owner |
+| ---------------------------------------------------- | -------- | ---------- | ----- | ----- |
+| Read their own record, bookings, payments, refunds   | ✓        |            |       |       |
+| Read everyone's records and bookings                 |          | ✓          | ✓     | ✓     |
+| Add and change people, bookings and rooms            |          |            | ✓     | ✓     |
+| Read and record payments and refunds; emails         |          |            | ✓     | ✓     |
+| Check people in on the day                           |          | ✓          | ✓     | ✓     |
+| Read and change costs; read the audit log            |          |            | ✓     | ✓     |
+| Edit or delete a payment or refund, or the audit log |          |            |       |       |
 
-`tests/db/bookings.test.ts` and `tests/db/costs.test.ts` prove these rules.
+Customers can't read the payments and refunds tables themselves:
+`public.my_booking_money(booking_ids)` gives them the amounts, dates and
+methods for their own bookings, without the team's notes.
+
+`tests/db/bookings.test.ts`, `tests/db/refunds.test.ts`,
+`tests/db/costs.test.ts` and `tests/db/check-in.test.ts` prove these rules.
+
+## Settings and emails
+
+```mermaid
+erDiagram
+  SETTINGS ||--o{ TERMS_VERSIONS : "every version of the terms"
+  BOOKINGS ||--o{ EMAIL_LOG : "emails"
+
+  SETTINGS {
+    uuid id PK
+    boolean singleton "only ever one row"
+    text business_name
+    text bank_sort_code "12-34-56"
+    text bank_account_number "8 digits"
+    text email_reply_to
+    text email_test_address "when set, every email goes here"
+    boolean send_payment_emails "B2, B3 or thanks after a payment"
+    text terms_text
+    integer terms_version "goes up when the terms change"
+  }
+  TERMS_VERSIONS {
+    integer version PK
+    text terms_text
+    timestamptz created_at
+  }
+  EMAIL_TEMPLATES {
+    uuid id PK
+    text key "B1, B2, B3, thanks, balance_reminder"
+    text subject "with {{placeholders}}"
+    text body
+    boolean attach_booking_details
+    boolean attach_confirmation
+    boolean attach_terms
+  }
+  EMAIL_LOG {
+    uuid id PK
+    text to_email
+    text subject
+    text body "as sent"
+    text_array attachments
+    text status "sent or failed"
+    text error "why it failed"
+    text provider_message_id "Resend's id"
+  }
+```
+
+- **Settings** is one row. Owners and admins can read it (the emails need
+  the bank details); only owners can change it.
+- **Terms:** changing the wording makes a new version in `terms_versions`,
+  kept for good, so we always know what someone was sent. The terms are
+  public, so anyone can read them.
+- **Email wording** is in `email_templates`. Owners and admins change it.
+- **The email log** can't be changed by anyone. The system adds to it
+  through `public.log_email()`, which only owners and admins can use.
+  Emails sent outside the system can still be recorded by hand.
+
+`tests/db/settings-and-emails.test.ts` proves these rules.
+
+## The waiting list
+
+- **`waitlist`**: event, customer, the option they'd like, notes, status
+  (`waiting`, `offered`, `booked`, `declined`, `removed`), when a place was
+  offered and the last day to accept, and the booking once they're booked.
+- Someone can only be waiting (or offered a place) once per event.
+- **`public.book_from_waitlist(waitlist_id, option_id, room_id)`** makes the
+  booking at the option's price and marks them booked, together. The
+  booking's own checks still apply, so a full event refuses it.
+- Owners and admins only. `tests/db/waiting-list.test.ts` proves these rules.
 
 ## Helper functions
 
@@ -270,4 +376,4 @@ Following CLAUDE.md section 6, with the changes agreed in section 15:
 | ----- | ------------------------------------------------------------------------------------ |
 | 2     | Sending the B1, B2 and B3 emails, balance reminders and chasers (`scheduled_emails`) |
 | 3     | `waitlist`, holds and expiry, `scheduled_emails`                                     |
-| 4     | `refunds` and credit                                                                 |
+| 4     | Credit towards a future event                                                        |

@@ -608,9 +608,9 @@ George asked to start building straight away and answer these later. Until he do
 | 6 | How long a place is held waiting for the deposit | Set per event, default 7 days. A reminder before it runs out, then the place is released. Staff can extend it |
 | 7 | Balance due date: exactly 6 weeks before, or chosen per event? | Set per event, defaulting to 6 weeks before |
 | 8 | Paying in parts allowed? | Yes: staff record any amount |
-| 9 | Cancelling more than 6 weeks before: keep £60, or the whole deposit? | Staff choose the refund amount, with the terms shown as a guide |
+| 9 | Cancelling more than 6 weeks before: keep £60, or the whole deposit? | Staff choose the refund amount, with the terms shown as a guide (built: Record a refund on a booking's page) |
 | 10 | What happens if the balance isn't paid by the due date | Shown as overdue for staff to chase. Nothing automatic |
-| 11 | Is "Thkd for Pmt" a separate email? | A "balance paid" email, the same as B3 |
+| 11 | Is "Thkd for Pmt" a separate email? | Built: B3 goes when they've paid in full; B2 when the deposit is covered; a separate "thanks for your payment" email for any other payment |
 | 12 | Other spreadsheets to import, and when to import March 2027 | Import is a later task |
 | 13 | VAT registered? (section 13, question 6) | Not VAT registered |
 | 14 | QR codes and a check-in screen? (question 9) | Not in the first version |
@@ -618,9 +618,13 @@ George asked to start building straight away and answer these later. Until he do
 | 16 | Who needs staff access, and what each can do (question 11) | Nichola and Morag as owners, and George as owner while it's being built |
 | 17 | Mailing list or newsletter tool? (question 14) | A marketing consent tick box only |
 | 18 | Accounts in Paper Fox's name? (question 15) | Assume yes. George sets them up |
-| 19 | How long to keep health information after an event | To confirm before launch |
+| 19 | How long to keep health information after an event | To confirm before launch. Until then it stays on each person's profile, so it carries to their next event as George asked; section 8 of the brief says delete it after each event, so George needs to choose |
 | 20 | The web address for bookings and the email sender (question 13) | `book.paper-fox.co.uk`, and `bookings@paper-fox.co.uk` |
 | 21 | Row 2 of the spreadsheet is "Nichola Murphy & Debbie G": one shared place or two places? | Imported as one row, which staff can split |
+| 22 | Credit towards a future event (the terms allow it) | Not built yet: note it in the booking's payment notes |
+| 23 | Can admins record refunds, or only owners? | Owners and admins, as the roles were set up in Phase 0 |
+| 24 | On the seating map customers see: everyone's names, first names and initials, or only their own seat? | First names and initials (suggested), when the room maps arrive |
+| 25 | Automatic balance reminders on a schedule (for example 14 and 3 days before the due date) | Not yet: staff send the balance reminder from Email people. Automatic sending needs the go-ahead and `SUPABASE_SERVICE_ROLE_KEY` in Vercel |
 
 ### 6, 7, 9, 13 to 16
 

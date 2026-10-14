@@ -16,6 +16,8 @@ import {
 import type { EventStatus } from "@/lib/events/rules";
 import { formatPrice } from "@/lib/money";
 import { listEventProfits } from "@/lib/reports/admin";
+import { emailTransport } from "@/lib/email/transport";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default function AdminDashboardPage() {
   return (
@@ -38,6 +40,8 @@ async function Dashboard() {
   const upcoming = (await listEventProfits()).filter(
     (event) => daysBetween(today, toUkDateInput(event.endsAt)) >= 0,
   );
+  const canMessage = can(user.staffRole, "attendees.message");
+  const attention = canMessage ? await needsAttention() : [];
 
   return (
     <div className="mt-4 space-y-8">
@@ -45,6 +49,23 @@ async function Dashboard() {
         Hello {user.fullName ?? user.email}. You&apos;re signed in as{" "}
         <strong>{ROLE_LABELS[user.staffRole].toLowerCase()}</strong>.
       </p>
+
+      {attention.length ? (
+        <section aria-labelledby="attention-heading">
+          <Card className="space-y-2 border-l-4 border-coral">
+            <h2 id="attention-heading" className="text-3xl">
+              Needs attention
+            </h2>
+            <ul className="list-disc space-y-1 pl-5">
+              {attention.map((item) => (
+                <li key={item.text}>
+                  {item.text} <Link href={item.href}>{item.link}</Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      ) : null}
 
       <section aria-labelledby="upcoming-heading" className="space-y-3">
         <h2 id="upcoming-heading" className="text-3xl">
@@ -111,6 +132,19 @@ async function Dashboard() {
                         People booked
                         <span className="sr-only"> on {event.title}</span>
                       </Link>
+                      {daysBetween(today, toUkDateInput(event.startsAt)) <=
+                      1 ? (
+                        <Link href={`/admin/events/${event.id}/check-in`}>
+                          Check in
+                          <span className="sr-only"> for {event.title}</span>
+                        </Link>
+                      ) : null}
+                      {canMessage ? (
+                        <Link href={`/admin/events/${event.id}/email`}>
+                          Email people
+                          <span className="sr-only"> on {event.title}</span>
+                        </Link>
+                      ) : null}
                       {canSeeMoney ? (
                         <Link href={`/admin/events/${event.id}/costs`}>
                           Profit and loss
@@ -129,15 +163,63 @@ async function Dashboard() {
       <Card>
         <h2 className="text-3xl">Coming next</h2>
         <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li>
-            Your B1, B2 and B3 emails sent from here, with balance reminders and
-            chasers. These need the Resend email set-up in docs/setup.md first.
-          </li>
-          <li>Online booking with a deposit, and the waiting list.</li>
+          <li>The waiting list, then online booking with a deposit.</li>
+          <li>The seating plan, once the room maps arrive.</li>
         </ul>
       </Card>
 
       <SignOutButton />
     </div>
   );
+}
+
+/** Things for owners and admins to look at: failed emails and set-up gaps. */
+async function needsAttention(): Promise<
+  { text: string; link: string; href: string }[]
+> {
+  const supabase = await createSupabaseServerClient();
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [{ count: failed }, { data: settings }] = await Promise.all([
+    supabase
+      .from("email_log")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "failed")
+      .gte("created_at", weekAgo),
+    supabase
+      .from("settings")
+      .select("bank_sort_code, email_test_address")
+      .maybeSingle(),
+  ]);
+  const items: { text: string; link: string; href: string }[] = [];
+  if (failed) {
+    items.push({
+      text:
+        failed === 1
+          ? "1 email in the last week couldn't be sent."
+          : `${failed} emails in the last week couldn't be sent.`,
+      link: "See which",
+      href: "/admin/emails",
+    });
+  }
+  if (settings && !settings.bank_sort_code) {
+    items.push({
+      text: "The bank details for transfers haven't been added yet, so emails can't say how to pay.",
+      link: "Add them in Settings",
+      href: "/admin/settings",
+    });
+  }
+  if (emailTransport() === "off") {
+    items.push({
+      text: "Sending emails isn't switched on yet, so emails can be previewed but not sent.",
+      link: "About emails",
+      href: "/admin/emails",
+    });
+  } else if (settings?.email_test_address) {
+    items.push({
+      text: `Test mode is on: every email goes to ${settings.email_test_address}, not to customers.`,
+      link: "Change in Settings",
+      href: "/admin/settings#emailTestAddress",
+    });
+  }
+  return items;
 }

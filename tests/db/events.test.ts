@@ -329,7 +329,8 @@ describe("copying an event", () => {
       `update public.events
           set summary = 'Our spring crop', included = 'Goody bag',
               facebook_group_url = 'https://www.facebook.com/groups/march2027',
-              booking_opens_at = '2026-03-23T09:00:00Z', deposit_hold_days = 5
+              booking_opens_at = '2026-03-23T09:00:00Z', deposit_hold_days = 5,
+              joining_info = 'Arrive from 3pm', class_kits_info = 'Two kits'
         where id = $1`,
       [event],
     );
@@ -370,10 +371,14 @@ describe("copying an event", () => {
       );
       const copy = rows[0]!.id;
 
+      // The private columns can only be read through
+      // event_private_details, so check the copy as the database itself.
+      await tx.asSuperuser();
       const event = await tx.query(
         `select title, slug, status, starts_at, ends_at, balance_due_on::text,
                 booking_opens_at, deposit_hold_days, summary, included,
-                facebook_group_url, copied_from_event_id, created_by
+                facebook_group_url, copied_from_event_id, created_by,
+                joining_info, class_kits_info
            from public.events where id = $1`,
         [copy],
       );
@@ -392,6 +397,10 @@ describe("copying an event", () => {
         facebook_group_url: null,
         copied_from_event_id: march,
         created_by: admin.id,
+        // Each event's joining details and class kits are its own, so last
+        // time's dates can't go out by mistake.
+        joining_info: "",
+        class_kits_info: "",
       });
 
       const options = await tx.query(

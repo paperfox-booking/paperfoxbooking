@@ -1,7 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { safeNextPath } from "@/lib/auth/redirects";
+import { nextFromAddress, safeNextPath } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { emailSchema, passwordSchema } from "@/lib/validation/auth";
 
@@ -50,5 +51,8 @@ export async function teamSignInAction(
     return { email: email.data, error: message };
   }
 
-  redirect(safeNextPath(String(formData.get("next") ?? ""), "/admin"));
+  const next =
+    safeNextPath(String(formData.get("next") ?? ""), "") ||
+    nextFromAddress((await headers()).get("referer"));
+  redirect(next || "/admin");
 }

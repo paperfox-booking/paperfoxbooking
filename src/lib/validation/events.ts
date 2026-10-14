@@ -30,6 +30,8 @@ export const EVENT_FIELDS = [
   "description",
   "included",
   "hotelInfo",
+  "classKitsInfo",
+  "joiningInfo",
   "facebookGroupUrl",
   "venueId",
   "startDate",
@@ -53,6 +55,8 @@ export interface EventRow {
   description: string;
   included: string;
   hotel_info: string;
+  class_kits_info: string;
+  joining_info: string;
   facebook_group_url: string | null;
   venue_id: string;
   starts_at: string;
@@ -75,6 +79,8 @@ export const eventFormSchema = z
     description: optionalText(5000),
     included: optionalText(3000),
     hotelInfo: optionalText(3000),
+    classKitsInfo: optionalText(5000),
+    joiningInfo: optionalText(5000),
     facebookGroupUrl: optionalWebAddress,
     venueId: z.uuid({ error: "Choose where the event is" }),
     startDate: requiredDate("Enter the date the event starts"),
@@ -154,6 +160,8 @@ export const eventFormSchema = z
       description: form.description,
       included: form.included,
       hotel_info: form.hotelInfo,
+      class_kits_info: form.classKitsInfo,
+      joining_info: form.joiningInfo,
       facebook_group_url: form.facebookGroupUrl,
       venue_id: form.venueId,
       starts_at: startsAt,

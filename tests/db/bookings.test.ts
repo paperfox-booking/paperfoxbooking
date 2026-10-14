@@ -217,13 +217,25 @@ describe("who can see bookings and payments", () => {
           table,
         ).toEqual([a.customer]);
       }
-      const payments = await tx.query<{ booking_id: string }>(
-        "select booking_id from public.payments where booking_id = any($1)",
+      // Their payments come through my_booking_money, with no notes, and
+      // never anyone else's. The payments table itself is for the team.
+      const table = await tx.query(
+        "select 1 from public.payments where booking_id = any($1)",
         [[a.booking.id, b.booking.id]],
       );
-      expect(payments.rows.map((row) => row.booking_id)).toEqual([
-        a.booking.id,
+      expect(table.rowCount).toBe(0);
+      const payments = await tx.query<{ booking_id: string }>(
+        "select * from public.my_booking_money($1)",
+        [[a.booking.id, b.booking.id]],
+      );
+      expect(payments.rows).toEqual([
+        expect.objectContaining({
+          booking_id: a.booking.id,
+          kind: "payment",
+          amount_pence: 6000,
+        }),
       ]);
+      expect(Object.keys(payments.rows[0]!)).not.toContain("note");
     });
   });
 
@@ -260,12 +272,39 @@ describe("who can see bookings and payments", () => {
         user.id,
         email.toUpperCase(),
       ]);
+      // Not linked until the email address is confirmed (by signing in).
+      const before = await tx.query(
+        "select user_id from public.customers where id = $1",
+        [customer],
+      );
+      expect(before.rows[0]?.user_id).toBeNull();
+      await tx.query(
+        "update auth.users set email_confirmed_at = now() where id = $1",
+        [user.id],
+      );
       await tx.as({ id: user.id, email });
       const { rows } = await tx.query(
         "select customer_id from public.bookings where event_id = $1",
         [event],
       );
       expect(rows).toEqual([{ customer_id: customer }]);
+    });
+  });
+
+  it("links a person the team adds to an account with the same confirmed email", async () => {
+    await inTransaction(async (tx) => {
+      const user = await tx.createUser("Signed up first");
+      await tx.query(
+        "update auth.users set email_confirmed_at = now() where id = $1",
+        [user.id],
+      );
+      const unconfirmed = await tx.createUser("Not confirmed");
+      await tx.as(await tx.createStaff("admin"));
+      const { rows } = await tx.query<{ user_id: string | null }>(
+        "insert into public.customers (full_name, email) values ('Signed up first', $1), ('Not confirmed', $2) returning user_id",
+        [user.email, unconfirmed.email],
+      );
+      expect(rows.map((row) => row.user_id)).toEqual([user.id, null]);
     });
   });
 
@@ -590,6 +629,149 @@ describe("copying an event with rooms", () => {
         [copy],
       );
       expect(bookings.rowCount).toBe(0);
+    });
+  });
+});
+
+describe("passing a place on", () => {
+  it("moves the booking and its payments to someone else, with the reason in the notes", async () => {
+    await inTransaction(async (tx) => {
+      const event = await tx.createEvent();
+      const first = await tx.createCustomer("Jo First");
+      const second = await tx.createCustomer("Ann Second");
+      const booking = await tx.createBooking(event, first);
+      await tx.createPayment(booking.id, 6000);
+      await tx.query(
+        "update public.bookings set checked_in_at = now() where id = $1",
+        [booking.id],
+      );
+      const admin = await tx.createStaff("admin");
+      await tx.as(admin);
+
+      await tx.query("select public.pass_place($1, $2, $3)", [
+        booking.id,
+        second,
+        "Approved by Nichola by email",
+      ]);
+      const { rows } = await tx.query<{
+        customer_id: string;
+        reference: string;
+        notes: string;
+        checked_in_at: string | null;
+        paid: number;
+      }>(
+        `select b.customer_id, b.reference, b.notes, b.checked_in_at,
+                (select sum(amount_pence)::int from public.payments p where p.booking_id = b.id) as paid
+           from public.bookings b where b.id = $1`,
+        [booking.id],
+      );
+      expect(rows[0]).toMatchObject({
+        customer_id: second,
+        reference: booking.reference,
+        checked_in_at: null,
+        paid: 6000,
+      });
+      expect(rows[0]!.notes).toMatch(
+        /^Place passed on from Jo First on \d\d\/\d\d\/\d{4}: Approved by Nichola by email$/,
+      );
+
+      const audit = await tx.query(
+        `select changed_by, old_values ->> 'customer_id' as from_id, new_values ->> 'customer_id' as to_id
+           from public.audit_log where table_name = 'bookings' and record_id = $1 and action = 'update'`,
+        [booking.id],
+      );
+      expect(audit.rows).toContainEqual({
+        changed_by: admin.id,
+        from_id: first,
+        to_id: second,
+      });
+    });
+  });
+
+  it("takes the new person off the event's waiting list", async () => {
+    await inTransaction(async (tx) => {
+      const event = await tx.createEvent();
+      const first = await tx.createCustomer("Jo First");
+      const second = await tx.createCustomer("Ann Second");
+      const booking = await tx.createBooking(event, first);
+      await tx.query(
+        "insert into public.waitlist (event_id, customer_id) values ($1, $2)",
+        [event, second],
+      );
+      await tx.as(await tx.createStaff("admin"));
+      await tx.query("select public.pass_place($1, $2, 'Approved')", [
+        booking.id,
+        second,
+      ]);
+      const { rows } = await tx.query(
+        "select status, notes from public.waitlist where event_id = $1 and customer_id = $2",
+        [event, second],
+      );
+      expect(rows).toEqual([
+        {
+          status: "removed",
+          notes: "Given a place passed on from Jo First.",
+        },
+      ]);
+    });
+  });
+
+  it("refuses someone already booked, a cancelled booking, and no reason", async () => {
+    await inTransaction(async (tx) => {
+      const event = await tx.createEvent();
+      const first = await tx.createCustomer("Jo First");
+      const second = await tx.createCustomer("Ann Second");
+      const booking = await tx.createBooking(event, first);
+      await tx.createBooking(event, second);
+      const third = await tx.createCustomer("Bea Third");
+      await tx.as(await tx.createStaff("owner"));
+
+      const pass = "select public.pass_place($1, $2, $3)";
+      expect(await tx.expectError(pass, [booking.id, second, "Swap"])).toMatch(
+        /Ann Second already has a place on this event/,
+      );
+      expect(await tx.expectError(pass, [booking.id, third, "  "])).toMatch(
+        /Say why the place is being passed on/,
+      );
+      expect(await tx.expectError(pass, [booking.id, first, "Swap"])).toMatch(
+        /They already have this place/,
+      );
+      await tx.query(
+        "update public.bookings set cancelled_at = now(), cancel_reason = 'x' where id = $1",
+        [booking.id],
+      );
+      expect(await tx.expectError(pass, [booking.id, third, "Swap"])).toMatch(
+        /This booking is cancelled/,
+      );
+    });
+  });
+
+  it("is only for owners and admins", async () => {
+    await inTransaction(async (tx) => {
+      const event = await tx.createEvent();
+      const booking = await tx.createBooking(
+        event,
+        await tx.createCustomer("Jo First"),
+      );
+      const other = await tx.createCustomer("Ann Second");
+      const door = await tx.createStaff("door");
+      const user = await tx.createUser("Customer");
+      for (const who of [door, user]) {
+        await tx.as(who);
+        expect(
+          await tx.expectError("select public.pass_place($1, $2, 'Swap')", [
+            booking.id,
+            other,
+          ]),
+        ).toMatch(/Only owners and admins can pass a place on/);
+      }
+      await tx.asAnonymous();
+      expect(
+        await tx.expectError("select public.pass_place($1, $2, 'Swap')", [
+          booking.id,
+          other,
+        ]),
+      ).toMatch(/permission denied/);
     });
   });
 });

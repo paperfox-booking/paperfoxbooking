@@ -3,7 +3,10 @@
 import { redirect } from "next/navigation";
 import { staffWithPermission } from "@/lib/auth/session";
 import { getPersonRow, type PersonRow } from "@/lib/bookings/admin";
+import { netPaid } from "@/lib/bookings/money";
 import { toUkDateInput } from "@/lib/dates";
+import { isTemplateKey, sendBookingEmail } from "@/lib/email/booking-emails";
+import { emailAfterRecordingPayment } from "@/lib/email/payment-emails";
 import { friendlyDatabaseError } from "@/lib/supabase/errors";
 import type { TablesUpdate } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -12,22 +15,29 @@ import {
   CANCEL_FIELDS,
   CELL_COLUMNS,
   EMAIL_RECORD_FIELDS,
+  PASS_PLACE_FIELDS,
   PAYMENT_FIELDS,
   PERSON_CELLS,
   PRICE_FIELDS,
+  REFUND_FIELDS,
   addPersonSchema,
   cancelSchema,
   cellSchemas,
   emailRecordSchema,
   isCell,
+  passPlaceSchema,
   paymentSchema,
   priceSchema,
+  refundSchema,
   removePaymentSchema,
+  removeRefundSchema,
   type AddPersonField,
   type CancelField,
   type EmailRecordField,
+  type PassPlaceField,
   type PaymentField,
   type PriceField,
+  type RefundField,
 } from "@/lib/validation/bookings";
 import {
   fieldErrorsFrom,
@@ -69,12 +79,45 @@ async function optionPrice(
   return data;
 }
 
+/**
+ * Someone already on file with this email address, or a new person. People
+ * without an email address are always added as new.
+ */
+async function findOrCreateCustomer(
+  supabase: Supabase,
+  fullName: string,
+  email: string | null,
+): Promise<{ id: string } | { error: string }> {
+  if (email) {
+    const { data: existing } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("email", email)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (existing) return { id: existing.id };
+  }
+  const { data: created, error } = await supabase
+    .from("customers")
+    .insert({ full_name: fullName, email })
+    .select("id")
+    .single();
+  if (error) {
+    return {
+      error:
+        error.code === "23505" ? EMAIL_TAKEN : friendlyDatabaseError(error),
+    };
+  }
+  return { id: created.id };
+}
+
 // ---------------------------------------------------------------------------
 // The spreadsheet screen
 // ---------------------------------------------------------------------------
 
 export type CellResult =
-  { ok: true; row: PersonRow } | { ok: false; error: string };
+  | { ok: true; row: PersonRow; emailNote?: string }
+  | { ok: false; error: string };
 
 /** Saves one cell of the spreadsheet screen and returns the updated row. */
 export async function saveCellAction(
@@ -184,31 +227,13 @@ export async function addPersonAction(
   const person = parsed.data;
   const supabase = await createSupabaseServerClient();
 
-  let customerId: string | null = null;
-  if (person.email) {
-    const { data: existing } = await supabase
-      .from("customers")
-      .select("id")
-      .eq("email", person.email)
-      .is("deleted_at", null)
-      .maybeSingle();
-    customerId = existing?.id ?? null;
-  }
-  if (!customerId) {
-    const { data: created, error } = await supabase
-      .from("customers")
-      .insert({ full_name: person.fullName, email: person.email })
-      .select("id")
-      .single();
-    if (error) {
-      return {
-        values,
-        error:
-          error.code === "23505" ? EMAIL_TAKEN : friendlyDatabaseError(error),
-      };
-    }
-    customerId = created.id;
-  }
+  const found = await findOrCreateCustomer(
+    supabase,
+    person.fullName,
+    person.email,
+  );
+  if ("error" in found) return { values, error: found.error };
+  const customerId = found.id;
 
   const option = person.optionId
     ? await optionPrice(supabase, eventId, person.optionId)
@@ -252,6 +277,8 @@ export async function addPersonAction(
 export type PaymentState = FormState<PaymentField> & {
   done?: boolean;
   row?: PersonRow;
+  /** What happened about the email that follows a payment. */
+  emailNote?: string;
 };
 
 /** Records money received for a booking. */
@@ -273,20 +300,33 @@ export async function recordPaymentAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("payments").insert({
-    booking_id: bookingId,
-    amount_pence: parsed.data.amount,
-    received_on: parsed.data.receivedOn,
-    method: parsed.data.method,
-    note: parsed.data.note,
-  });
+  const { data: payment, error } = await supabase
+    .from("payments")
+    .insert({
+      booking_id: bookingId,
+      amount_pence: parsed.data.amount,
+      received_on: parsed.data.receivedOn,
+      method: parsed.data.method,
+      note: parsed.data.note,
+    })
+    .select("id")
+    .single();
   if (error) return { values, error: friendlyDatabaseError(error) };
+  const email = await emailAfterRecordingPayment(supabase, bookingId, {
+    id: payment.id,
+    amountPence: parsed.data.amount,
+    receivedOn: parsed.data.receivedOn,
+  });
 
   if (formData.get("returnTo") === "booking") {
-    redirect(`/admin/bookings/${bookingId}?notice=payment-recorded`);
+    redirect(
+      `/admin/bookings/${bookingId}?notice=payment-recorded${
+        email ? `&email=${email.template}.${email.outcome}` : ""
+      }`,
+    );
   }
   const row = await getPersonRow(bookingId);
-  return { done: true, row: row ?? undefined };
+  return { done: true, row: row ?? undefined, emailNote: email?.text };
 }
 
 // ---------------------------------------------------------------------------
@@ -329,6 +369,132 @@ export async function removePaymentAction(
   if (error) return { error: friendlyDatabaseError(error) };
   if (count === 0) return { error: "That payment has already been removed." };
   redirect(`/admin/bookings/${bookingId}?notice=payment-removed`);
+}
+
+export type PassPlaceState = FormState<PassPlaceField>;
+
+/** Passes a place to someone else: the booking and its payments move to them. */
+export async function passPlaceAction(
+  bookingId: string,
+  _previous: PassPlaceState,
+  formData: FormData,
+): Promise<PassPlaceState> {
+  const values = readForm(formData, PASS_PLACE_FIELDS);
+  if (!(await staffWithPermission("bookings.manage"))) {
+    return { values, error: NOT_ALLOWED };
+  }
+  const parsed = passPlaceSchema.safeParse(values);
+  if (!parsed.success) {
+    return { values, fieldErrors: fieldErrorsFrom(parsed.error) };
+  }
+  const supabase = await createSupabaseServerClient();
+  // Check the booking first, so nobody new is added for a place that can't
+  // be passed on.
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("cancelled_at")
+    .eq("id", bookingId)
+    .maybeSingle();
+  if (!booking) return { values, error: "That booking couldn't be found." };
+  if (booking.cancelled_at) {
+    return {
+      values,
+      error: "This booking is cancelled, so its place can't be passed on.",
+    };
+  }
+  const found = parsed.data.customerId
+    ? { id: parsed.data.customerId }
+    : await findOrCreateCustomer(
+        supabase,
+        parsed.data.fullName,
+        parsed.data.email,
+      );
+  if ("error" in found) return { values, error: found.error };
+  const { error } = await supabase.rpc("pass_place", {
+    booking_id: bookingId,
+    new_customer_id: found.id,
+    reason: parsed.data.reason,
+  });
+  if (error) return { values, error: friendlyDatabaseError(error) };
+  redirect(`/admin/bookings/${bookingId}?notice=place-passed`);
+}
+
+export type RefundState = FormState<RefundField>;
+
+/** Records money paid back to someone (by bank transfer or cash). */
+export async function recordRefundAction(
+  bookingId: string,
+  _previous: RefundState,
+  formData: FormData,
+): Promise<RefundState> {
+  const values = readForm(formData, REFUND_FIELDS);
+  if (!(await staffWithPermission("refunds.make"))) {
+    return {
+      values,
+      error: "You need to be an owner or admin to record refunds.",
+    };
+  }
+  const supabase = await createSupabaseServerClient();
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select(
+      "id, payments(amount_pence, deleted_at), refunds(amount_pence, deleted_at)",
+    )
+    .eq("id", bookingId)
+    .maybeSingle();
+  if (!booking) return { values, error: "That booking couldn't be found." };
+
+  const parsed = refundSchema(
+    today(),
+    netPaid(booking.payments, booking.refunds),
+  ).safeParse(values);
+  if (!parsed.success) {
+    return { values, fieldErrors: fieldErrorsFrom(parsed.error) };
+  }
+  // The database checks again, with the booking locked, in case someone
+  // else recorded a refund at the same moment.
+  const { error } = await supabase.from("refunds").insert({
+    booking_id: bookingId,
+    amount_pence: parsed.data.amount,
+    refunded_on: parsed.data.refundedOn,
+    method: parsed.data.method,
+    reason: parsed.data.reason,
+  });
+  if (error) return { values, error: friendlyDatabaseError(error) };
+  redirect(`/admin/bookings/${bookingId}?notice=refund-recorded`);
+}
+
+export async function removeRefundAction(
+  bookingId: string,
+  refundId: string,
+  _previous: SimpleState,
+  formData: FormData,
+): Promise<SimpleState> {
+  if (!(await staffWithPermission("refunds.make"))) {
+    return { error: "You need to be an owner or admin to remove refunds." };
+  }
+  const parsed = removeRefundSchema.safeParse({
+    reason: String(formData.get("reason") ?? ""),
+  });
+  if (!parsed.success) {
+    return { fieldErrors: { reason: parsed.error.issues[0]!.message } };
+  }
+  const supabase = await createSupabaseServerClient();
+  const { error, count } = await supabase
+    .from("refunds")
+    .update(
+      {
+        deleted_at: new Date().toISOString(),
+        delete_reason: parsed.data.reason,
+      },
+      { count: "exact" },
+    )
+    .eq("id", refundId)
+    .eq("booking_id", bookingId)
+    .is("deleted_at", null);
+  if (error) return { error: friendlyDatabaseError(error) };
+  if (count === 0) return { error: "That refund has already been removed." };
+  redirect(`/admin/bookings/${bookingId}?notice=refund-removed`);
 }
 
 export type EmailRecordState = FormState<EmailRecordField>;
@@ -481,14 +647,48 @@ export async function quickPaymentAction(
     };
   }
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("payments").insert({
-    booking_id: bookingId,
-    amount_pence: parsed.data.amount,
-    received_on: parsed.data.receivedOn,
-    method: "bank_transfer",
-  });
+  const { data: payment, error } = await supabase
+    .from("payments")
+    .insert({
+      booking_id: bookingId,
+      amount_pence: parsed.data.amount,
+      received_on: parsed.data.receivedOn,
+      method: "bank_transfer",
+    })
+    .select("id")
+    .single();
   if (error) return { ok: false, error: friendlyDatabaseError(error) };
+  const email = await emailAfterRecordingPayment(supabase, bookingId, {
+    id: payment.id,
+    amountPence: parsed.data.amount,
+    receivedOn: parsed.data.receivedOn,
+  });
   const row = await getPersonRow(bookingId);
   if (!row) return { ok: false, error: "That booking couldn't be found." };
-  return { ok: true, row };
+  return { ok: true, row, emailNote: email?.text };
+}
+
+// ---------------------------------------------------------------------------
+// Sending an email from a booking's page
+// ---------------------------------------------------------------------------
+
+export type SendEmailState = { error?: string };
+
+/** Sends one of the standard emails to the person on this booking. */
+export async function sendEmailAction(
+  bookingId: string,
+  _previous: SendEmailState,
+  formData: FormData,
+): Promise<SendEmailState> {
+  if (!(await staffWithPermission("attendees.message"))) {
+    return { error: "You need to be an owner or admin to send emails." };
+  }
+  const template = formData.get("template");
+  if (!isTemplateKey(template)) {
+    return { error: "Choose which email to send." };
+  }
+  const supabase = await createSupabaseServerClient();
+  const outcome = await sendBookingEmail(supabase, bookingId, { template });
+  if (!outcome.sent) return { error: outcome.error };
+  redirect(`/admin/bookings/${bookingId}?notice=email-sent`);
 }

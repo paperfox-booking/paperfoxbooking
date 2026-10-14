@@ -48,6 +48,10 @@ const TEMPLATE_SHORT: Record<string, string> = {
   B3: "B3",
   thanks: "Thanks",
   balance_reminder: "Reminder",
+  class_kits: "Class kits",
+  joining: "Joining",
+  cancelled: "Cancelled",
+  refund: "Refund",
   other: "Other",
 };
 
@@ -183,7 +187,7 @@ export function PeopleGrid({
       });
       setStatus((current) => ({ ...current, [key]: "saved" }));
       setAnnouncement(
-        `Recorded ${amount.startsWith("£") ? amount : `£${amount}`} from ${result.row.fullName}. They've now paid ${formatPrice(result.row.paidPence)}.`,
+        `Recorded ${amount.startsWith("£") ? amount : `£${amount}`} from ${result.row.fullName}. They've now paid ${formatPrice(result.row.paidPence)}.${result.emailNote ? ` ${result.emailNote}` : ""}`,
       );
     } else {
       setErrors((current) => ({ ...current, [key]: result.error }));
@@ -642,11 +646,11 @@ export function PeopleGrid({
           money={moneyOf(paying)}
           today={today}
           onClose={() => setPaying(null)}
-          onRecorded={(row) => {
+          onRecorded={(row, emailNote) => {
             replaceRow(row);
             setPaying(null);
             setAnnouncement(
-              `Payment recorded for ${row.fullName}. They've now paid ${formatPrice(row.paidPence)}.`,
+              `Payment recorded for ${row.fullName}. They've now paid ${formatPrice(row.paidPence)}.${emailNote ? ` ${emailNote}` : ""}`,
             );
           }}
         />

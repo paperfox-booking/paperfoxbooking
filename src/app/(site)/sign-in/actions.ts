@@ -1,7 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { safeNextPath } from "@/lib/auth/redirects";
+import { nextFromAddress, safeNextPath } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { emailSchema, signInCodeSchema } from "@/lib/validation/auth";
 
@@ -101,7 +102,9 @@ async function verifyCode(formData: FormData): Promise<SignInState> {
     };
   }
 
-  const next = safeNextPath(String(formData.get("next") ?? ""), "");
+  const next =
+    safeNextPath(String(formData.get("next") ?? ""), "") ||
+    nextFromAddress((await headers()).get("referer"));
   if (next) redirect(next);
 
   // With nowhere to go back to, the team go to the admin area and customers

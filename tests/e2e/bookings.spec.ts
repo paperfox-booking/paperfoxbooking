@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectNoAccessibilityProblems } from "./accessibility";
 import { eventWithPeople } from "./data";
-import { signInAsTeam, visibleText } from "./team";
+import { signInAsTeam, sql, visibleText } from "./team";
 
 /**
  * A booking's own page, and the People list. Tagged @supabase because they
@@ -50,6 +50,10 @@ test.describe("a booking's own page @supabase", () => {
     await page.getByRole("button", { name: "Record payment" }).click();
     await expect(visibleText(page, "Payment recorded.")).toBeVisible();
     await expect(visibleText(page, "Deposit paid")).toBeVisible();
+    // Paying the deposit sends B2 by itself.
+    await expect(
+      visibleText(page, "B2: deposit received has been emailed to them."),
+    ).toBeVisible();
 
     // Record another £60 by mistake, then remove it.
     await page.getByLabel("Amount received").fill("60");
@@ -101,7 +105,9 @@ test.describe("a booking's own page @supabase", () => {
     await page.getByLabel("Which email").selectOption("B2");
     await page.getByRole("button", { name: "Record email" }).click();
     await expect(visibleText(page, "Email recorded.")).toBeVisible();
-    await expect(visibleText(page, /^B2: deposit received/)).toBeVisible();
+    await expect(
+      visibleText(page, /^Sent outside the system, recorded by/),
+    ).toBeVisible();
 
     // Cancel, then reinstate.
     await openDetails(page, "Cancel this booking");
@@ -125,6 +131,189 @@ test.describe("a booking's own page @supabase", () => {
       visibleText(page, "The booking has been reinstated."),
     ).toBeVisible();
     await expectNoAccessibilityProblems(page);
+  });
+});
+
+test.describe("refunds @supabase", () => {
+  test("an owner cancels a booking and records a refund, with the terms as a guide", async ({
+    page,
+  }, testInfo) => {
+    const { eventId, people } = await eventWithPeople();
+    const [booking] = await sql<{ id: string }>(
+      `select b.id from public.bookings b join public.customers c on c.id = b.customer_id
+        where b.event_id = $1 and c.full_name = $2`,
+      [eventId, people.bea],
+    );
+    for (const amount of [6000, 13500]) {
+      await sql(
+        "insert into public.payments (booking_id, amount_pence, received_on) values ($1, $2, '2026-09-01')",
+        [booking!.id, amount],
+      );
+    }
+    await signInAsTeam(
+      page,
+      testInfo.project.name,
+      "owner",
+      `/admin/bookings/${booking!.id}`,
+    );
+    await expect(visibleText(page, "Paid in full")).toBeVisible();
+
+    await openDetails(page, "Cancel this booking");
+    await page
+      .getByLabel("Why it's being cancelled")
+      .fill("Can't come any more");
+    await page.getByLabel("Yes, cancel this booking").check();
+    await page.getByRole("button", { name: "Cancel the booking" }).click();
+    await expect(
+      visibleText(
+        page,
+        "The booking has been cancelled and the place freed up.",
+      ),
+    ).toBeVisible();
+
+    // The refund form is open once cancelled, with what they've paid, how
+    // long before the event it is, and what the terms say.
+    await expect(
+      visibleText(page, /^They've paid £195, and the deposit is £60\./),
+    ).toBeVisible();
+    await expect(
+      visibleText(
+        page,
+        /They cancelled on .+ weeks.* before the event starts\./,
+      ),
+    ).toBeVisible();
+    await openDetails(page, "What the terms say about cancelling");
+    await expect(
+      visibleText(page, /a £60 administration fee will be retained/),
+    ).toBeVisible();
+    await expectNoAccessibilityProblems(page);
+    expect(await noSidewaysScroll(page)).toBeLessThanOrEqual(0);
+
+    // More than they paid isn't allowed.
+    const refund = page.getByLabel("Amount refunded");
+    await refund.fill("200");
+    await page.getByLabel("Why", { exact: true }).fill("Cancelled early");
+    await page.getByRole("button", { name: "Record refund" }).click();
+    await expect(
+      visibleText(
+        page,
+        "That's more than they've paid. The most you can refund is £195",
+      ),
+    ).toBeVisible();
+
+    await page.getByLabel("Amount refunded").fill("135");
+    await page
+      .getByLabel("Why", { exact: true })
+      .fill("Cancelled more than 6 weeks before, £60 fee kept");
+    await page.getByRole("button", { name: "Record refund" }).click();
+    await expect(
+      visibleText(page, "Refund recorded.", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      visibleText(page, "£195 received, less £135 refunded: £60"),
+    ).toBeVisible();
+    await expect(
+      visibleText(page, /^Refund of £135 recorded \(bank transfer, paid back/),
+    ).toBeVisible();
+
+    // The statement lists the payments and the refund.
+    const statement = await page.request.get(
+      `/admin/bookings/${booking!.id}/statement`,
+    );
+    expect(statement.headers()["content-type"]).toBe("application/pdf");
+    expect(statement.headers()["content-disposition"]).toContain(
+      "Statement%20-%20PF-",
+    );
+
+    // A refund recorded by mistake can be removed, and stays in the history.
+    const removal = page
+      .locator("details")
+      .filter({
+        has: page.locator("summary", { hasText: "the refund of £135" }),
+        visible: true,
+      })
+      .last();
+    await removal.locator("summary").click();
+    await removal.getByLabel("Why it's being removed").fill("Wrong booking");
+    await removal
+      .getByRole("button", { name: "Remove the refund of £135" })
+      .click();
+    await expect(visibleText(page, /Refund removed\./)).toBeVisible();
+    await expect(
+      visibleText(page, "Refund of £135 removed: Wrong booking."),
+    ).toBeVisible();
+    await expectNoAccessibilityProblems(page);
+  });
+});
+
+test.describe("passing a place on @supabase", () => {
+  test("an owner passes a place to someone who's been before", async ({
+    page,
+  }, testInfo) => {
+    const { eventId, people } = await eventWithPeople();
+    const newcomer = people.zoe.replace("Zoe Crafter", "Cara Newcomer");
+    const email = `${newcomer.replace(/\s+/g, ".").toLowerCase()}@example.test`;
+    await sql(
+      "insert into public.customers (full_name, email) values ($1, $2)",
+      [newcomer, email],
+    );
+    const [booking] = await sql<{ id: string; reference: string }>(
+      `select b.id, b.reference from public.bookings b join public.customers c on c.id = b.customer_id
+        where b.event_id = $1 and c.full_name = $2`,
+      [eventId, people.zoe],
+    );
+    await sql(
+      "insert into public.payments (booking_id, amount_pence, received_on) values ($1, 6000, '2026-09-01')",
+      [booking!.id],
+    );
+    await signInAsTeam(
+      page,
+      testInfo.project.name,
+      "owner",
+      `/admin/bookings/${booking!.id}`,
+    );
+
+    await openDetails(page, "Pass this place to someone else");
+    await page
+      .getByLabel("Who's taking the place")
+      .fill(`${newcomer} (${email})`);
+    // Choosing someone who's been before fills in their email.
+    await expect(page.getByLabel("Who's taking the place")).toHaveValue(
+      newcomer,
+    );
+    await expect(page.getByLabel("Their email (optional)")).toHaveValue(email);
+    await expectNoAccessibilityProblems(page);
+    await page.getByRole("button", { name: "Pass the place on" }).click();
+    await expect(
+      visibleText(page, "Say why, for example Approved by Nichola", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await page
+      .getByLabel("Why it's being passed on")
+      .fill("Approved by Nichola by email");
+    await page.getByRole("button", { name: "Pass the place on" }).click();
+
+    await expect(
+      visibleText(page, /^The place has been passed on\./),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: newcomer }),
+    ).toBeVisible();
+    // Same booking: same reference, and the payment came with it.
+    await expect(
+      visibleText(page, booking!.reference, { exact: false }).first(),
+    ).toBeVisible();
+    await expect(visibleText(page, "Deposit paid")).toBeVisible();
+    await expect(
+      visibleText(page, `Place passed on from ${people.zoe} to ${newcomer}.`),
+    ).toBeVisible();
+    await expect(
+      visibleText(
+        page,
+        /Place passed on from .+: Approved by Nichola by email/,
+      ).first(),
+    ).toBeVisible();
   });
 });
 

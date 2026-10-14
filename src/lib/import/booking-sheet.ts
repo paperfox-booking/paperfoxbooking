@@ -16,7 +16,16 @@ import { formatPrice } from "@/lib/money";
 export type Cell = string | number | boolean | Date | null;
 
 export type EmailTemplate =
-  "B1" | "B2" | "B3" | "thanks" | "balance_reminder" | "other";
+  | "B1"
+  | "B2"
+  | "B3"
+  | "thanks"
+  | "balance_reminder"
+  | "class_kits"
+  | "joining"
+  | "cancelled"
+  | "refund"
+  | "other";
 
 export interface SheetOption {
   id: string;
