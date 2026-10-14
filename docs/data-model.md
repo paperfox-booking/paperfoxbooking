@@ -125,6 +125,10 @@ erDiagram
   the same number of days, keeping UK clock times across the clocks
   changing. It copies the options but not the Facebook group, which is
   different for each event.
+- **Moving** an event: when its start moves to another UK date, a trigger
+  (`events_move_options`) moves each option's own start by the same number
+  of days, keeping its UK clock time. Options without their own start, and
+  removed options, are left alone.
 - Every table has `created_at`, `updated_at` and `created_by`.
 
 ### Who can do what with events

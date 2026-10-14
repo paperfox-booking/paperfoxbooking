@@ -315,49 +315,53 @@ describe("money and dates are stored safely", () => {
   });
 });
 
-describe("copying an event", () => {
-  async function marchEvent(
-    tx: Parameters<Parameters<typeof inTransaction>[0]>[0],
-  ) {
-    const event = await tx.createEvent({
-      title: "Coventry Crop Weekend March 2027",
-      startsAt: "2027-03-19T09:00:00Z",
-      endsAt: "2027-03-21T17:00:00Z",
-      balanceDueOn: "2027-01-26",
-    });
-    await tx.query(
-      `update public.events
-          set summary = 'Our spring crop', included = 'Goody bag',
-              facebook_group_url = 'https://www.facebook.com/groups/march2027',
-              booking_opens_at = '2026-03-23T09:00:00Z', deposit_hold_days = 5,
-              joining_info = 'Arrive from 3pm', class_kits_info = 'Two kits'
-        where id = $1`,
-      [event],
-    );
-    await tx.createTicketType(event, {
-      name: "Weekend (4pm start)",
-      pricePence: 19500,
-      depositPence: 6000,
-      startsAt: "2027-03-19T16:00:00Z",
-    });
-    const kickStarter = await tx.createTicketType(event, {
-      name: "Friday Kick Starter (9am start)",
-      pricePence: 24500,
-      depositPence: 8500,
-      startsAt: "2027-03-19T09:00:00Z",
-    });
-    const removed = await tx.createTicketType(event, { name: "Old option" });
-    await tx.query(
-      "update public.ticket_types set deleted_at = now(), sort_order = 1 where id = $1",
-      [removed],
-    );
-    await tx.query(
-      "update public.ticket_types set sort_order = 2 where id = $1",
-      [kickStarter],
-    );
-    return event;
-  }
+/**
+ * The March 2027 weekend (in GMT) with its two options, each with its own
+ * start, and a removed option.
+ */
+async function marchEvent(
+  tx: Parameters<Parameters<typeof inTransaction>[0]>[0],
+) {
+  const event = await tx.createEvent({
+    title: "Coventry Crop Weekend March 2027",
+    startsAt: "2027-03-19T09:00:00Z",
+    endsAt: "2027-03-21T17:00:00Z",
+    balanceDueOn: "2027-01-26",
+  });
+  await tx.query(
+    `update public.events
+        set summary = 'Our spring crop', included = 'Goody bag',
+            facebook_group_url = 'https://www.facebook.com/groups/march2027',
+            booking_opens_at = '2026-03-23T09:00:00Z', deposit_hold_days = 5,
+            joining_info = 'Arrive from 3pm', class_kits_info = 'Two kits'
+      where id = $1`,
+    [event],
+  );
+  await tx.createTicketType(event, {
+    name: "Weekend (4pm start)",
+    pricePence: 19500,
+    depositPence: 6000,
+    startsAt: "2027-03-19T16:00:00Z",
+  });
+  const kickStarter = await tx.createTicketType(event, {
+    name: "Friday Kick Starter (9am start)",
+    pricePence: 24500,
+    depositPence: 8500,
+    startsAt: "2027-03-19T09:00:00Z",
+  });
+  const removed = await tx.createTicketType(event, { name: "Old option" });
+  await tx.query(
+    "update public.ticket_types set deleted_at = now(), sort_order = 1 where id = $1",
+    [removed],
+  );
+  await tx.query(
+    "update public.ticket_types set sort_order = 2 where id = $1",
+    [kickStarter],
+  );
+  return event;
+}
 
+describe("copying an event", () => {
   it("moves every date on, keeping UK clock times across the clocks changing", async () => {
     await inTransaction(async (tx) => {
       const march = await marchEvent(tx);
@@ -465,6 +469,120 @@ describe("copying an event", () => {
       );
       await tx.asAnonymous();
       expect(await tx.expectError(copy, [march])).toMatch(/permission denied/);
+    });
+  });
+});
+
+describe("moving an event to new dates", () => {
+  async function optionStarts(
+    tx: Parameters<Parameters<typeof inTransaction>[0]>[0],
+    event: string,
+  ) {
+    await tx.asSuperuser();
+    const { rows } = await tx.query<{ name: string; starts_at: Date | null }>(
+      `select name, starts_at from public.ticket_types
+        where event_id = $1 order by name`,
+      [event],
+    );
+    return Object.fromEntries(rows.map((row) => [row.name, row.starts_at]));
+  }
+
+  it("moves each option's start by the same days, keeping UK clock times across the clocks changing", async () => {
+    await inTransaction(async (tx) => {
+      const march = await marchEvent(tx);
+      await tx.createTicketType(march, { name: "Starts with the event" });
+      // A removed option is left as it was.
+      await tx.query(
+        `update public.ticket_types set starts_at = '2027-03-19T10:00:00Z'
+          where event_id = $1 and name = 'Old option'`,
+        [march],
+      );
+      const admin = await tx.createStaff("admin");
+
+      // March is in GMT; June is in British Summer Time, an hour ahead. The
+      // start stays 9am in UK time, as the event form sends it.
+      await tx.as(admin);
+      await tx.query(
+        `update public.events
+            set starts_at = '2027-06-18T08:00:00Z', ends_at = '2027-06-20T16:00:00Z'
+          where id = $1`,
+        [march],
+      );
+      expect(await optionStarts(tx, march)).toEqual({
+        "Weekend (4pm start)": new Date("2027-06-18T15:00:00Z"),
+        "Friday Kick Starter (9am start)": new Date("2027-06-18T08:00:00Z"),
+        "Starts with the event": null,
+        "Old option": new Date("2027-03-19T10:00:00Z"),
+      });
+
+      // And back again, a week earlier than before.
+      await tx.as(admin);
+      await tx.query(
+        `update public.events
+            set starts_at = '2027-03-12T09:00:00Z', ends_at = '2027-03-14T17:00:00Z'
+          where id = $1`,
+        [march],
+      );
+      expect(await optionStarts(tx, march)).toEqual({
+        "Weekend (4pm start)": new Date("2027-03-12T16:00:00Z"),
+        "Friday Kick Starter (9am start)": new Date("2027-03-12T09:00:00Z"),
+        "Starts with the event": null,
+        "Old option": new Date("2027-03-19T10:00:00Z"),
+      });
+
+      // Each move is in the history, under the person who made it.
+      const history = await tx.query<{ changed_by: string }>(
+        `select changed_by from public.audit_log
+          where table_name = 'ticket_types' and action = 'update'
+            and record_id in (select id from public.ticket_types where event_id = $1)
+            and changed_by = $2`,
+        [march, admin.id],
+      );
+      expect(history.rows).toHaveLength(4);
+    });
+  });
+
+  it("leaves the options alone when only the time changes", async () => {
+    await inTransaction(async (tx) => {
+      const march = await marchEvent(tx);
+      const owner = await tx.createStaff("owner");
+      await tx.as(owner);
+      await tx.query(
+        "update public.events set starts_at = '2027-03-19T10:30:00Z', title = 'Renamed' where id = $1",
+        [march],
+      );
+      const starts = await optionStarts(tx, march);
+      expect(starts["Weekend (4pm start)"]).toEqual(
+        new Date("2027-03-19T16:00:00Z"),
+      );
+      expect(starts["Friday Kick Starter (9am start)"]).toEqual(
+        new Date("2027-03-19T09:00:00Z"),
+      );
+    });
+  });
+
+  it("goes by the UK date, not the UTC date", async () => {
+    await inTransaction(async (tx) => {
+      // Both starts are on 17 June in UTC, but the second is half past
+      // midnight on Friday 18 June in UK time, so the options move a day.
+      const june = await tx.createEvent({
+        startsAt: "2027-06-17T22:30:00Z",
+        endsAt: "2027-06-20T16:00:00Z",
+        balanceDueOn: "2027-05-07",
+      });
+      await tx.createTicketType(june, {
+        name: "Weekend (4pm start)",
+        startsAt: "2027-06-18T15:00:00Z",
+      });
+      const owner = await tx.createStaff("owner");
+      await tx.as(owner);
+      await tx.query(
+        "update public.events set starts_at = '2027-06-17T23:30:00Z' where id = $1",
+        [june],
+      );
+      expect(await optionStarts(tx, june)).toEqual({
+        "Weekend (4pm start)": new Date("2027-06-19T15:00:00Z"),
+      });
     });
   });
 });

@@ -49,6 +49,15 @@ export function CostsGrid({
 }) {
   const router = useRouter();
   const [costs, setCosts] = useState(initialCosts);
+  // Each change asks the server for fresh figures, and Next.js keeps recently
+  // visited pages in the document, so the server's list can change while
+  // this one is shown. The fresh list replaces this one. Boxes being typed
+  // in keep their text, as each is keyed by its saved value.
+  const [shownCosts, setShownCosts] = useState(initialCosts);
+  if (initialCosts !== shownCosts) {
+    setShownCosts(initialCosts);
+    setCosts(initialCosts);
+  }
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [announcement, setAnnouncement] = useState("");
@@ -107,6 +116,8 @@ export function CostsGrid({
         current.filter((candidate) => candidate.id !== cost.id),
       );
       setAnnouncement(`Removed ${cost.description || label(cost.category)}.`);
+      // The totals above the list come from the server.
+      router.refresh();
     } else {
       setAnnouncement(`Couldn't remove it: ${result.error}`);
     }

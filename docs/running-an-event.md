@@ -38,6 +38,18 @@ Leave **Add the usual two options** ticked to add:
 - **Weekend (4pm start):** £195, with a £60 deposit;
 - **Friday Kick Starter (9am start):** £245, with an £85 deposit.
 
+## Changing an event's dates
+
+Open the event and choose **Change details**. If you move the start date,
+each option's own start moves by the same number of days and keeps its time,
+even when the clocks change in between: moving March's weekend to June keeps
+the Kick Starter at 9am and the Weekend at 4pm. Changing only the start time
+leaves the options as they are (change an option's own time under
+**Change** below it).
+
+The end date, the balance due date and when booking opens and closes don't
+move by themselves, so check them on the same page before saving.
+
 ## Options, prices and deposits
 
 Open the event and choose **Change** under an option to change its price,
