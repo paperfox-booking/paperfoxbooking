@@ -286,8 +286,8 @@ test.describe("emails @supabase", () => {
     const choice = page.getByLabel("Email to send");
     await expect(choice).toHaveValue("refund");
     await expect(choice.locator("option")).toHaveText([
-      "Booking cancelled",
-      "Refund sent",
+      "Cancellation confirmation",
+      "Refund confirmation",
     ]);
     await page.getByRole("button", { name: "Preview" }).click();
     await expect(
@@ -297,7 +297,9 @@ test.describe("emails @supabase", () => {
     ).toBeVisible();
     await expectNoAccessibilityProblems(page);
     const started = new Date();
-    await page.getByRole("button", { name: "Send Refund sent" }).click();
+    await page
+      .getByRole("button", { name: "Send Refund confirmation" })
+      .click();
     await expect(visibleText(page, "Email sent.")).toBeVisible();
     const refund = await waitForEmail(
       emailOf(people.bea),
@@ -309,7 +311,9 @@ test.describe("emails @supabase", () => {
 
     await page.getByLabel("Email to send").selectOption("cancelled");
     await page.getByRole("button", { name: "Preview" }).click();
-    await page.getByRole("button", { name: "Send Booking cancelled" }).click();
+    await page
+      .getByRole("button", { name: "Send Cancellation confirmation" })
+      .click();
     await expect(visibleText(page, "Email sent.")).toBeVisible();
     const cancelled = await waitForEmail(
       emailOf(people.bea),

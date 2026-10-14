@@ -1,6 +1,6 @@
 -- Two more emails, sent to one person from their booking's page:
---   * booking cancelled, to confirm a cancellation;
---   * refund sent, once a refund has been recorded.
+--   * cancellation confirmation, once a booking is cancelled;
+--   * refund confirmation, once a refund has been recorded.
 -- They're about one booking, so they aren't offered on Email people.
 
 alter table public.email_templates drop constraint email_templates_key;
@@ -21,7 +21,7 @@ insert into public.email_templates
   (key, name, description, subject, body, attach_booking_details, attach_terms, attach_confirmation, sort_order)
 values
 (
-  'cancelled', 'Booking cancelled',
+  'cancelled', 'Cancellation confirmation',
   'Confirms that someone''s booking has been cancelled. Sent from their booking''s page, once it''s cancelled.',
   '{{event}}: your booking has been cancelled',
   $cancelled$Hello {{first_name}}
@@ -34,7 +34,7 @@ We're sorry you can't make it this time, and we hope to see you at a future even
   false, false, false, 8
 ),
 (
-  'refund', 'Refund sent',
+  'refund', 'Refund confirmation',
   'Lets someone know their refund is on its way. Sent from their booking''s page, once the refund is recorded.',
   '{{event}}: your refund is on its way',
   $refund$Hello {{first_name}}

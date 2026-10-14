@@ -232,8 +232,8 @@ export const EMAIL_TEMPLATE_LABELS: Record<
   balance_reminder: "Balance reminder",
   class_kits: "Class kits",
   joining: "Joining details",
-  cancelled: "Booking cancelled",
-  refund: "Refund sent",
+  cancelled: "Cancellation confirmation",
+  refund: "Refund confirmation",
   other: "Other",
 };
 

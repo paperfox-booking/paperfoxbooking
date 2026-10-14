@@ -406,7 +406,7 @@ async function Booking({
           {canRefund && paidPence > 0 ? (
             <details
               className="rounded-2xl border border-cream bg-white p-4"
-              open={cancelled}
+              open={cancelled && !hasRefund}
             >
               <summary className="cursor-pointer text-2xl font-bold">
                 Record a refund
